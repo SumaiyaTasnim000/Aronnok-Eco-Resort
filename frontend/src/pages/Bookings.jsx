@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 
-function Bookings({ role }) {
+function Bookings() {
   const API_BASE = "http://localhost:5001/api/bookings";
   const token = localStorage.getItem("token");
+  const role = localStorage.getItem("role"); // ✅ fix: use role from storage
 
   const [bookings, setBookings] = useState([]);
   const [selectedBooking, setSelectedBooking] = useState(null);
@@ -25,7 +26,7 @@ function Bookings({ role }) {
   const fetchBookings = async () => {
     try {
       const res = await axios.get(API_BASE, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` }, // ✅ always send auth header
       });
       setBookings(res.data);
     } catch (err) {
@@ -44,12 +45,10 @@ function Bookings({ role }) {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // Numeric fields
     if (["advance", "due", "ccontact", "rid"].includes(name)) {
       if (!/^\d*$/.test(value)) return;
     }
 
-    // Alphabet fields
     if (["cname", "advanceReceiver", "dueReceiver"].includes(name)) {
       if (!/^[a-zA-Z\s]*$/.test(value)) return;
     }
@@ -61,7 +60,6 @@ function Bookings({ role }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Convert numeric fields
       const payload = {
         ...form,
         rid: Number(form.rid),
@@ -69,49 +67,63 @@ function Bookings({ role }) {
         due: Number(form.due) || 0,
       };
 
+      let res;
       if (form._id) {
-        // Update
-        await axios.put(`${API_BASE}/${form._id}`, payload, {
+        if (role !== "admin") {
+          alert("Only admins can update bookings ❌");
+          return;
+        }
+        res = await axios.put(`${API_BASE}/${form._id}`, payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        alert("Booking updated successfully ✅");
       } else {
-        // Create
-        await axios.post(API_BASE, payload, {
+        res = await axios.post(API_BASE, payload, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        alert("Booking saved successfully ✅");
       }
 
+      alert(res.data?.message || "Booking saved successfully ✅");
       setShowForm(false);
       fetchBookings();
     } catch (err) {
-      console.error("Booking API error:", err.response?.data || err.message);
-      alert("Error while saving booking ❌");
+      console.error("Booking API error:", err.response || err.message);
+      alert(
+        err.response?.data?.message ||
+          `Error while saving booking ❌: ${err.message}`
+      );
     }
   };
 
-  // Edit booking (only admin)
+  // Edit booking
   const handleEdit = (booking) => {
+    if (role !== "admin") {
+      alert("Only admins can edit bookings ❌");
+      return;
+    }
     setForm(booking);
     setShowForm(true);
   };
 
-  // Soft delete booking (only admin)
+  // Soft delete booking
   const handleDelete = async (id) => {
+    if (role !== "admin") {
+      alert("Only admins can delete bookings ❌");
+      return;
+    }
     if (!window.confirm("Are you sure you want to delete this booking?"))
       return;
+
     try {
-      await axios.patch(
+      const res = await axios.patch(
         `${API_BASE}/${id}/delete`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } } // ✅ fix: send auth header
       );
-      alert("Booking deleted (soft) ✅");
+      alert(res.data?.message || "Booking deleted (soft) ✅");
       fetchBookings();
     } catch (err) {
       console.error("Delete error:", err.response?.data || err.message);
-      alert("Error deleting booking ❌");
+      alert(err.response?.data?.message || "Error deleting booking ❌");
     }
   };
 
@@ -152,8 +164,6 @@ function Bookings({ role }) {
                 >
                   View Details
                 </button>
-
-                {/* Admin only: show edit & delete */}
                 {role === "admin" && (
                   <>
                     <button
@@ -199,7 +209,7 @@ function Bookings({ role }) {
         </button>
       )}
 
-      {/* Booking form */}
+      {/* Form */}
       {showForm && (
         <form
           onSubmit={handleSubmit}
@@ -217,11 +227,7 @@ function Bookings({ role }) {
             <div key={field.name} className="mb-4">
               <label className="block mb-1 text-white">{field.label}</label>
               <input
-                type={
-                  ["startDate", "endDate"].includes(field.name)
-                    ? "date"
-                    : "text"
-                }
+                type="text"
                 name={field.name}
                 value={form[field.name]}
                 onChange={handleChange}

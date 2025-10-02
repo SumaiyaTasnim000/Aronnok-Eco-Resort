@@ -3,6 +3,38 @@ import React, { useState } from "react";
 import axios from "axios";
 
 function Rooms({ role }) {
+  const token = localStorage.getItem("token");
+  const API_BASE = "http://localhost:5001/api";
+
+  // ==== NEW: fallback role detection (if prop `role` is not provided) ====
+  // This will try in order: prop role -> token payload urole/role -> localStorage "role"
+  try {
+    if (!role) {
+      let rawToken = token || "";
+      if (rawToken.startsWith("Bearer ")) rawToken = rawToken.slice(7).trim();
+      if (rawToken) {
+        const parts = rawToken.split(".");
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          role =
+            payload.urole ||
+            payload.role ||
+            localStorage.getItem("role") ||
+            role;
+        } else {
+          role = localStorage.getItem("role") || role;
+        }
+      } else {
+        role = localStorage.getItem("role") || role;
+      }
+    }
+  } catch (err) {
+    // fallback quietly if token decode fails
+    role = localStorage.getItem("role") || role;
+    console.error("Role detection error:", err);
+  }
+  // =====================================================================
+
   const [availableRooms, setAvailableRooms] = useState([]);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -20,12 +52,20 @@ function Rooms({ role }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const API_BASE = "http://localhost:5001/api";
+  if (!token) {
+    alert("You are not logged in! Please log in to continue.");
+    return null;
+  }
 
-  // ✅ Check availability
+  const axiosConfig = {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  };
+
+  // ✅ Check room availability
   const checkAvailability = async (e) => {
-    if (e && e.preventDefault) e.preventDefault();
-
+    if (e) e.preventDefault();
     setMessage("");
     setError("");
     setAvailableRooms([]);
@@ -39,10 +79,11 @@ function Rooms({ role }) {
 
     try {
       setLoading(true);
-      const res = await axios.post(`${API_BASE}/rooms/check`, {
-        startDate,
-        endDate,
-      });
+      const res = await axios.post(
+        `${API_BASE}/rooms/check`,
+        { startDate, endDate },
+        axiosConfig
+      );
 
       const data = (res.data || []).map((r) => ({
         ...r,
@@ -52,20 +93,20 @@ function Rooms({ role }) {
       setAvailableRooms(data);
 
       const availCount = data.filter((r) => r.available).length;
-      if (availCount === 0) {
-        setMessage("No rooms available for the chosen dates.");
-      } else {
-        setMessage(`${availCount} rooms available.`);
-      }
+      setMessage(
+        availCount === 0
+          ? "No rooms available for the chosen dates."
+          : `${availCount} rooms available.`
+      );
     } catch (err) {
+      console.error(err.response || err.message);
       setError("Error checking availability.");
-      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ Book Now
+  // ✅ Start booking a room
   const handleBookNow = (room) => {
     setSelectedRoom(room);
     setViewBooking(null);
@@ -79,7 +120,7 @@ function Rooms({ role }) {
     });
   };
 
-  // ✅ Submit Booking (Create/Update)
+  // ✅ Submit booking (create/update)
   const submitBooking = async (e) => {
     e.preventDefault();
     setError("");
@@ -88,19 +129,21 @@ function Rooms({ role }) {
     try {
       setLoading(true);
       let res;
+
       if (viewBooking && role === "admin") {
         // Update booking
-        res = await axios.put(`${API_BASE}/rooms/book/${viewBooking._id}`, {
-          ...formData,
-        });
+        res = await axios.put(
+          `${API_BASE}/bookings/${viewBooking._id}`,
+          { ...formData, rid: selectedRoom?.rid || viewBooking.rid },
+          axiosConfig
+        );
       } else {
-        // New booking
-        res = await axios.post(`${API_BASE}/rooms/book/${selectedRoom.rid}`, {
-          rid: selectedRoom.rid,
-          startDate,
-          endDate,
-          ...formData,
-        });
+        // Create new booking -> use rooms/book/:rid route
+        res = await axios.post(
+          `${API_BASE}/rooms/book/${selectedRoom.rid}`,
+          { ...formData, startDate, endDate },
+          axiosConfig
+        );
       }
 
       setMessage(res.data.message || "Booking saved successfully ✅");
@@ -108,36 +151,55 @@ function Rooms({ role }) {
       setSelectedRoom(null);
       setViewBooking(null);
     } catch (err) {
-      console.error("submitBooking error:", err);
-      setError("Error while saving booking.");
+      console.error(err.response || err.message);
+      setError(
+        err.response?.data?.message ||
+          "Error while saving booking (check token)."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ View Booking Details
+  // ✅ View booking details
   const fetchBookingDetails = async (room) => {
+    setError("");
+    setMessage("");
+    setSelectedRoom(null);
     try {
-      const res = await axios.get(`${API_BASE}/rooms/bookings/${room.rid}`);
-      setViewBooking(res.data);
-      setSelectedRoom(null);
+      const res = await axios.get(`${API_BASE}/bookings`, axiosConfig);
+      const booking = res.data.find((b) => b.rid === room.rid && !b.isDeleted);
+      if (!booking) {
+        setError("No booking found for this room.");
+        return;
+      }
+      setViewBooking(booking);
     } catch (err) {
-      console.error("fetchBookingDetails error:", err);
-      setError("Server error while fetching booking details.");
+      console.error(err.response || err.message);
+      setError(
+        err.response?.data?.message ||
+          "Server error while fetching booking details."
+      );
     }
   };
 
-  // ✅ Soft Delete Booking
+  // ✅ Delete booking (admin only)
   const deleteBooking = async () => {
     if (!viewBooking) return;
     try {
-      await axios.delete(`${API_BASE}/rooms/book/${viewBooking._id}`);
+      await axios.patch(
+        `${API_BASE}/bookings/${viewBooking._id}/delete`,
+        {},
+        axiosConfig
+      );
       setMessage("Booking deleted successfully (soft delete).");
       setViewBooking(null);
       await checkAvailability();
     } catch (err) {
-      console.error("deleteBooking error:", err);
-      setError("Error deleting booking.");
+      console.error(err.response || err.message);
+      setError(
+        err.response?.data?.message || "Error deleting booking (check token)."
+      );
     }
   };
 
@@ -145,7 +207,7 @@ function Rooms({ role }) {
     <div style={{ padding: 20, textAlign: "center", color: "#236472ff" }}>
       <h2>Room Booking</h2>
 
-      {/* Date Selection */}
+      {/* Date selection */}
       <form onSubmit={checkAvailability} style={{ marginBottom: 20 }}>
         <label>
           Start Date:
@@ -173,7 +235,7 @@ function Rooms({ role }) {
       {error && <div style={{ color: "crimson" }}>{error}</div>}
       {message && <div style={{ color: "green" }}>{message}</div>}
 
-      {/* Room List */}
+      {/* Room list */}
       <div>
         {availableRooms.map((room) => (
           <div
@@ -191,7 +253,6 @@ function Rooms({ role }) {
               alignItems: "center",
             }}
           >
-            {/* Left side: room info */}
             <div>
               <h3>{room.rname}</h3>
               <div>Category: {room.rcategory}</div>
@@ -206,7 +267,6 @@ function Rooms({ role }) {
               </div>
             </div>
 
-            {/* Right side: buttons and forms */}
             <div style={{ textAlign: "right" }}>
               {room.available ? (
                 <button
@@ -238,7 +298,7 @@ function Rooms({ role }) {
                 </button>
               )}
 
-              {/* Booking Form */}
+              {/* Booking form */}
               {selectedRoom?.rid === room.rid && (
                 <form
                   onSubmit={submitBooking}
@@ -296,10 +356,7 @@ function Rooms({ role }) {
                     placeholder="Due Receiver"
                     value={formData.dueReceiver}
                     onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        dueReceiver: e.target.value,
-                      })
+                      setFormData({ ...formData, dueReceiver: e.target.value })
                     }
                   />
                   <div>
@@ -335,7 +392,7 @@ function Rooms({ role }) {
                 </form>
               )}
 
-              {/* Booking Details */}
+              {/* Booking details */}
               {viewBooking && viewBooking.rid === room.rid && (
                 <div style={{ marginTop: 12, textAlign: "left" }}>
                   <p>Customer: {viewBooking.cname}</p>
