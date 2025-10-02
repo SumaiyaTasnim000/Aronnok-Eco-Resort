@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import Swal from "sweetalert2";
 
 function Restaurant({ role }) {
   const API_BASE = "http://localhost:5001/api";
@@ -90,16 +91,31 @@ function Restaurant({ role }) {
   };
 
   const handleDelete = async (id) => {
-    try {
-      const res = await axios.delete(`${API_BASE}/restaurants/${id}`, {
-        headers: { Authorization: token },
-      });
-      setMessage(res.data.message);
-      setMessageColor("green");
-      if (viewAll) fetchRestaurants();
-    } catch (err) {
-      setMessage("Error deleting restaurant entry");
-      setMessageColor("crimson");
+    const result = await Swal.fire({
+      title: "Are you sure you want to delete?",
+      //text: "This action cannot be undone!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        const res = await axios.delete(`${API_BASE}/restaurants/${id}`, {
+          headers: { Authorization: token },
+        });
+        setMessage(res.data.message);
+        setMessageColor("green");
+        if (viewAll) fetchRestaurants();
+
+        Swal.fire("Deleted!", "The entry has been deleted.", "success");
+      } catch (err) {
+        setMessage("Error deleting restaurant entry");
+        setMessageColor("crimson");
+        Swal.fire("Error!", "Failed to delete entry.", "error");
+      }
     }
   };
 
