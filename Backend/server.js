@@ -24,6 +24,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/expenses", expensesRoutes);
 app.use("/api/salaries", salaryRoutes);
 app.use("/api/restaurants", require("./routes/restaurants"));
+app.use("/api/staffs", require("./routes/staffs"));
 
 const PORT = process.env.PORT || 5001;
 

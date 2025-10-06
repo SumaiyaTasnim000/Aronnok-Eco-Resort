@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import PageWrapper from "../components/PageWrapper";
 
 function Expenses({ role }) {
   const API_BASE = "http://localhost:5001/api";
@@ -106,15 +107,18 @@ function Expenses({ role }) {
   });
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#f8f9fa",
-        padding: "40px",
-        display: "flex",
-        justifyContent: "center",
-      }}
-    >
+    <PageWrapper>
+      <h2
+        style={{
+          textAlign: "center",
+          color: "#0d47a1",
+          fontWeight: 700,
+          fontSize: "1.8rem",
+          marginBottom: "30px",
+        }}
+      >
+        Expenses Management
+      </h2>
       <div
         style={{
           width: "100%",
@@ -123,10 +127,9 @@ function Expenses({ role }) {
           padding: "30px",
           borderRadius: "12px",
           boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+          margin: "0 auto",
         }}
       >
-        <h2 style={{ textAlign: "center", marginBottom: 20 }}>Expenses</h2>
-
         {/* ✅ View All / Hide All toggle for both admin and manager */}
         <div style={{ textAlign: "center", marginBottom: 20 }}>
           <button
@@ -203,8 +206,9 @@ function Expenses({ role }) {
                 type="button"
                 onClick={cancelEdit}
                 style={{
-                  background: "gray",
-                  color: "#fff",
+                  background: "#d32f2f",
+
+                  color: "#f1ececff",
                   padding: "10px 20px",
                   marginLeft: 10,
                   border: "none",
@@ -330,7 +334,7 @@ function Expenses({ role }) {
           </>
         )}
       </div>
-    </div>
+    </PageWrapper>
   );
 }
 
