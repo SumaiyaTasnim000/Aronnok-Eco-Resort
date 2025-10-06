@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
+import PageWrapper from "../components/PageWrapper"; // ✅ import wrapper
 
 function Restaurant({ role }) {
   const API_BASE = "http://localhost:5001/api";
@@ -93,7 +94,6 @@ function Restaurant({ role }) {
   const handleDelete = async (id) => {
     const result = await Swal.fire({
       title: "Are you sure you want to delete?",
-      //text: "This action cannot be undone!",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
@@ -109,7 +109,6 @@ function Restaurant({ role }) {
         setMessage(res.data.message);
         setMessageColor("green");
         if (viewAll) fetchRestaurants();
-
         Swal.fire("Deleted!", "The entry has been deleted.", "success");
       } catch (err) {
         setMessage("Error deleting restaurant entry");
@@ -135,32 +134,34 @@ function Restaurant({ role }) {
     setMessage("");
   };
 
-  // Get all available years for the dropdown
   const availableYears = [
     ...new Set(restaurants.map((r) => new Date(r.res_date).getFullYear())),
   ].sort((a, b) => b - a);
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#f8f9fa",
-        padding: "40px",
-        display: "flex",
-        justifyContent: "center",
-      }}
-    >
+    <PageWrapper>
       <div
         style={{
           width: "100%",
-          maxWidth: "800px",
-          background: "#fff",
-          padding: "30px",
-          borderRadius: "12px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+          maxWidth: "850px",
+          background: "#ffffff",
+          borderRadius: "22px",
+          padding: "45px 50px",
+          boxShadow: "0 15px 45px rgba(0, 0, 0, 0.15)",
+          margin: "80px auto",
         }}
       >
-        <h2 style={{ textAlign: "center", marginBottom: 20 }}>Restaurant</h2>
+        <h2
+          style={{
+            textAlign: "center",
+            color: "#0d47a1",
+            fontWeight: 700,
+            fontSize: "1.8rem",
+            marginBottom: "30px",
+          }}
+        >
+          Restaurant Management
+        </h2>
 
         {/* View All toggle */}
         <div style={{ textAlign: "center", marginBottom: 20 }}>
@@ -242,7 +243,7 @@ function Restaurant({ role }) {
                 type="button"
                 onClick={cancelEdit}
                 style={{
-                  background: "gray",
+                  background: "#d32f2f",
                   color: "#fff",
                   padding: "10px 20px",
                   marginLeft: 10,
@@ -269,7 +270,7 @@ function Restaurant({ role }) {
           )}
         </form>
 
-        {/* Dropdown filter */}
+        {/* Filter dropdown */}
         {viewAll && (
           <div
             style={{
@@ -294,7 +295,6 @@ function Restaurant({ role }) {
               <option value="year">Year</option>
             </select>
 
-            {/* Year dropdown only shows when filter = "year" */}
             {filter === "year" && (
               <select
                 value={yearFilter || ""}
@@ -378,7 +378,7 @@ function Restaurant({ role }) {
           </>
         )}
       </div>
-    </div>
+    </PageWrapper>
   );
 }
 

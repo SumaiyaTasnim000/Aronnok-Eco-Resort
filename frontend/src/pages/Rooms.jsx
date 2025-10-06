@@ -1,13 +1,12 @@
 // frontend/src/pages/Rooms.jsx
 import React, { useState } from "react";
 import axios from "axios";
+import PageWrapper from "../components/PageWrapper";
 
 function Rooms({ role }) {
   const token = localStorage.getItem("token");
   const API_BASE = "http://localhost:5001/api";
 
-  // ==== NEW: fallback role detection (if prop `role` is not provided) ====
-  // This will try in order: prop role -> token payload urole/role -> localStorage "role"
   try {
     if (!role) {
       let rawToken = token || "";
@@ -204,36 +203,92 @@ function Rooms({ role }) {
   };
 
   return (
-    <div style={{ padding: 20, textAlign: "center", color: "#236472ff" }}>
-      <h2>Room Booking</h2>
+    <PageWrapper>
+      <h2
+        style={{
+          textAlign: "center",
+          color: "#0d47a1",
+          fontWeight: 700,
+          fontSize: "1.8rem",
+          marginBottom: "30px",
+        }}
+      >
+        Room Booking
+      </h2>
 
       {/* Date selection */}
-      <form onSubmit={checkAvailability} style={{ marginBottom: 20 }}>
-        <label>
+      <form
+        onSubmit={checkAvailability}
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "12px",
+          marginBottom: "25px", // ⬅ spacing below filters
+        }}
+      >
+        <label style={{ fontWeight: 500 }}>
           Start Date:
           <input
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
             required
+            style={{
+              marginLeft: "6px",
+              padding: "6px 10px",
+              borderRadius: "6px",
+              border: "1px solid #bbb",
+            }}
           />
         </label>
-        <label style={{ marginLeft: 16 }}>
+
+        <label style={{ fontWeight: 500 }}>
           End Date:
           <input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             required
+            style={{
+              marginLeft: "6px",
+              padding: "6px 10px",
+              borderRadius: "6px",
+              border: "1px solid #bbb",
+            }}
           />
         </label>
-        <button type="submit" style={{ marginLeft: 16 }} disabled={loading}>
+
+        <button
+          type="submit"
+          style={{
+            backgroundColor: "#884892ff",
+            color: "#fff",
+            padding: "10px 18px",
+            border: "none",
+            borderRadius: "6px",
+            cursor: "pointer",
+            fontWeight: 600,
+          }}
+          disabled={loading}
+        >
           {loading ? "Checking..." : "Check Availability"}
         </button>
       </form>
 
-      {error && <div style={{ color: "crimson" }}>{error}</div>}
-      {message && <div style={{ color: "green" }}>{message}</div>}
+      {error && (
+        <div
+          style={{ color: "crimson", textAlign: "center", marginBottom: 10 }}
+        >
+          {error}
+        </div>
+      )}
+      {message && (
+        <div style={{ color: "green", textAlign: "center", marginBottom: 20 }}>
+          {message}
+        </div>
+      )}
 
       {/* Room list */}
       <div>
@@ -244,7 +299,7 @@ function Rooms({ role }) {
               width: 760,
               margin: "12px auto",
               padding: 16,
-              border: "1px solid #ddd",
+              border: "2px solid #020202ff",
               borderRadius: 8,
               background: "#fff",
               textAlign: "left",
@@ -449,7 +504,7 @@ function Rooms({ role }) {
           </div>
         ))}
       </div>
-    </div>
+    </PageWrapper>
   );
 }
 
