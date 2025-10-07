@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import PageWrapper from "../components/PageWrapper";
+import Swal from "sweetalert2";
 
 function Rooms({ role }) {
   const token = localStorage.getItem("token");
@@ -183,22 +184,46 @@ function Rooms({ role }) {
   };
 
   // ✅ Delete booking (admin only)
+  // ✅ Delete booking (admin only) with SweetAlert confirmation
   const deleteBooking = async () => {
     if (!viewBooking) return;
+
+    const confirmResult = await Swal.fire({
+      title: "Are you sure you want to delete?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (!confirmResult.isConfirmed) return; // user cancelled
+
     try {
       await axios.patch(
         `${API_BASE}/bookings/${viewBooking._id}/delete`,
         {},
         axiosConfig
       );
-      setMessage("Booking deleted successfully (soft delete).");
+
+      await Swal.fire({
+        title: "Deleted!",
+        text: "Booking deleted successfully (soft delete).",
+        icon: "success",
+        timer: 1800,
+        showConfirmButton: false,
+      });
+
       setViewBooking(null);
       await checkAvailability();
     } catch (err) {
       console.error(err.response || err.message);
-      setError(
-        err.response?.data?.message || "Error deleting booking (check token)."
-      );
+      Swal.fire({
+        title: "Error!",
+        text: err.response?.data?.message || "Error deleting booking.",
+        icon: "error",
+        confirmButtonColor: "#d33",
+      });
     }
   };
 
@@ -324,20 +349,24 @@ function Rooms({ role }) {
 
             <div style={{ textAlign: "right" }}>
               {room.available ? (
-                <button
-                  onClick={() => handleBookNow(room)}
-                  style={{
-                    background: "green",
-                    color: "white",
-                    padding: "6px 12px",
-                    borderRadius: "6px",
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  Book Now
-                </button>
-              ) : (
+                // ✅ Hide "Book Now" if currently booking this room
+                selectedRoom?.rid === room.rid ? null : (
+                  <button
+                    onClick={() => handleBookNow(room)}
+                    style={{
+                      background: "green",
+                      color: "white",
+                      padding: "6px 12px",
+                      borderRadius: "6px",
+                      border: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Book Now
+                  </button>
+                )
+              ) : // ✅ Hide "View Details" if this room's details are currently expanded
+              viewBooking?.rid === room.rid ? null : (
                 <button
                   onClick={() => fetchBookingDetails(room)}
                   style={{
@@ -354,6 +383,7 @@ function Rooms({ role }) {
               )}
 
               {/* Booking form */}
+              {/* Booking form */}
               {selectedRoom?.rid === room.rid && (
                 <form
                   onSubmit={submitBooking}
@@ -364,6 +394,7 @@ function Rooms({ role }) {
                     gap: 8,
                   }}
                 >
+                  {/* Customer Name */}
                   <input
                     placeholder="Customer name"
                     value={formData.cname}
@@ -371,24 +402,81 @@ function Rooms({ role }) {
                       setFormData({ ...formData, cname: e.target.value })
                     }
                     required
+                    style={{
+                      width: "100%",
+                      padding: 8,
+                      border: "1px solid #ccc",
+                      borderRadius: "6px",
+                    }}
                   />
-                  <input
-                    placeholder="Contact"
-                    type="number"
-                    value={formData.ccontact}
-                    onChange={(e) =>
-                      setFormData({ ...formData, ccontact: e.target.value })
-                    }
-                    required
-                  />
+
+                  {/* Contact field with +880 */}
+                  <div style={{ display: "flex", alignItems: "center" }}>
+                    <span
+                      style={{
+                        background: "#eee",
+                        padding: "8px 10px",
+                        border: "1px solid #ccc",
+                        borderRadius: "6px 0 0 6px",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      +880
+                    </span>
+                    <input
+                      type="number"
+                      placeholder="1XXXXXXXXX"
+                      value={formData.ccontact}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (/^\d{0,10}$/.test(value)) {
+                          setFormData({ ...formData, ccontact: value });
+                        }
+                      }}
+                      required
+                      min="1000000000"
+                      max="1999999999"
+                      onInvalid={(e) =>
+                        e.target.setCustomValidity(
+                          "Please enter a valid 10-digit BD phone number after +880"
+                        )
+                      }
+                      onInput={(e) => e.target.setCustomValidity("")}
+                      style={{
+                        flex: 1,
+                        padding: 8,
+                        border: "1px solid #ccc",
+                        borderRadius: "0 6px 6px 0",
+                      }}
+                    />
+                  </div>
+
+                  {/* Advance */}
                   <input
                     placeholder="Advance"
                     type="number"
+                    min="1"
+                    step="any"
                     value={formData.advance}
                     onChange={(e) =>
                       setFormData({ ...formData, advance: e.target.value })
                     }
+                    style={{
+                      width: "100%",
+                      padding: 8,
+                      border: "1px solid #ccc",
+                      borderRadius: "6px",
+                    }}
+                    required
+                    onInvalid={(e) =>
+                      e.target.setCustomValidity(
+                        "Advance amount cannot be 0 or negative (-)"
+                      )
+                    }
+                    onInput={(e) => e.target.setCustomValidity("")}
                   />
+
+                  {/* Advance Receiver */}
                   <input
                     placeholder="Advance Receiver"
                     value={formData.advanceReceiver}
@@ -398,22 +486,56 @@ function Rooms({ role }) {
                         advanceReceiver: e.target.value,
                       })
                     }
+                    style={{
+                      width: "100%",
+                      padding: 8,
+                      border: "1px solid #ccc",
+                      borderRadius: "6px",
+                    }}
                   />
+
+                  {/* Due */}
+                  {/* Due */}
                   <input
-                    placeholder="Due"
+                    placeholder="Due Amount"
                     type="number"
+                    min="0"
+                    step="any"
                     value={formData.due}
                     onChange={(e) =>
                       setFormData({ ...formData, due: e.target.value })
                     }
+                    style={{
+                      width: "100%",
+                      padding: 8,
+                      border: "1px solid #ccc",
+                      borderRadius: "6px",
+                    }}
+                    required
+                    onInvalid={(e) =>
+                      e.target.setCustomValidity(
+                        "Due amount cannot be negative (-)"
+                      )
+                    }
+                    onInput={(e) => e.target.setCustomValidity("")}
                   />
+
+                  {/* Due Receiver */}
                   <input
                     placeholder="Due Receiver"
                     value={formData.dueReceiver}
                     onChange={(e) =>
                       setFormData({ ...formData, dueReceiver: e.target.value })
                     }
+                    style={{
+                      width: "100%",
+                      padding: 8,
+                      border: "1px solid #ccc",
+                      borderRadius: "6px",
+                    }}
                   />
+
+                  {/* Buttons */}
                   <div>
                     <button
                       type="submit"
@@ -448,17 +570,65 @@ function Rooms({ role }) {
               )}
 
               {/* Booking details */}
+              {/* Booking details */}
               {viewBooking && viewBooking.rid === room.rid && (
-                <div style={{ marginTop: 12, textAlign: "left" }}>
-                  <p>Customer: {viewBooking.cname}</p>
-                  <p>Contact: {viewBooking.ccontact}</p>
-                  <p>Advance: {viewBooking.advance}</p>
-                  <p>Advance Receiver: {viewBooking.advanceReceiver}</p>
-                  <p>Due: {viewBooking.due}</p>
-                  <p>Due Receiver: {viewBooking.dueReceiver}</p>
+                <div
+                  style={{
+                    marginTop: 14,
+                    background: "#f9f9ff",
+                    border: "1.5px solid #ccc",
+                    borderRadius: "10px",
+                    padding: "14px 16px",
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                    textAlign: "left",
+                    fontSize: "15px",
+                  }}
+                >
+                  <div style={{ marginBottom: "10px" }}>
+                    <p>
+                      <strong>Customer:</strong> {viewBooking.cname || "—"}
+                    </p>
+                    <p>
+                      <strong>Contact:</strong>{" "}
+                      <span style={{ color: "#333" }}>
+                        {viewBooking.ccontact || "—"}
+                      </span>
+                    </p>
+                    <p>
+                      <strong>Advance:</strong>{" "}
+                      <span style={{ color: "#1b5e20", fontWeight: "600" }}>
+                        {viewBooking.advance || 0}
+                      </span>
+                    </p>
+                    <p>
+                      <strong>Advance Receiver:</strong>{" "}
+                      <span style={{ color: "#333" }}>
+                        {viewBooking.advanceReceiver || "—"}
+                      </span>
+                    </p>
+                    <p>
+                      <strong>Due:</strong>{" "}
+                      <span
+                        style={{
+                          color: viewBooking.due < 0 ? "crimson" : "#0d47a1",
+                          fontWeight: "600",
+                        }}
+                      >
+                        {viewBooking.due}
+                      </span>
+                    </p>
+                    <p>
+                      <strong>Due Receiver:</strong>{" "}
+                      <span style={{ color: "#333" }}>
+                        {viewBooking.dueReceiver || "—"}
+                      </span>
+                    </p>
+                  </div>
 
                   {role === "admin" && (
-                    <div>
+                    <div
+                      style={{ display: "flex", gap: "8px", marginTop: "8px" }}
+                    >
                       <button
                         onClick={() => {
                           setFormData({
@@ -472,13 +642,13 @@ function Rooms({ role }) {
                           setSelectedRoom(room);
                         }}
                         style={{
-                          background: "orange",
+                          background: "#f57c00",
                           color: "white",
                           padding: "6px 12px",
                           borderRadius: "6px",
                           border: "none",
                           cursor: "pointer",
-                          marginRight: 8,
+                          fontWeight: "600",
                         }}
                       >
                         Edit
@@ -486,12 +656,13 @@ function Rooms({ role }) {
                       <button
                         onClick={deleteBooking}
                         style={{
-                          background: "red",
+                          background: "#c62828",
                           color: "white",
                           padding: "6px 12px",
                           borderRadius: "6px",
                           border: "none",
                           cursor: "pointer",
+                          fontWeight: "600",
                         }}
                       >
                         Delete

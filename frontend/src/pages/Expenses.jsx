@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import PageWrapper from "../components/PageWrapper";
+import Swal from "sweetalert2";
 
 function Expenses({ role }) {
   const API_BASE = "http://localhost:5001/api";
@@ -14,10 +15,12 @@ function Expenses({ role }) {
   const [viewAll, setViewAll] = useState(false);
   const [editingId, setEditingId] = useState(null);
 
-  // Filters
+  // Filter
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterMonth, setFilterMonth] = useState("");
-
+  const [filterFrom, setFilterFrom] = useState("");
+  const [filterTo, setFilterTo] = useState("");
+  const viewRef = useRef(null);
+  const formRef = useRef(null);
   // Fetch all expenses
   const fetchExpenses = async () => {
     try {
@@ -40,6 +43,13 @@ function Expenses({ role }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
+
+    // ✅ Inline validation: amount must be positive and non-zero
+    if (!form.eamount || Number(form.eamount) <= 0) {
+      setMessage("Amount must be greater than 0");
+      setMessageColor("crimson");
+      return; // stop submission
+    }
 
     try {
       if (editingId) {
@@ -66,19 +76,28 @@ function Expenses({ role }) {
   };
 
   const handleDelete = async (id) => {
-    try {
-      const res = await axios.delete(`${API_BASE}/expenses/${id}`, {
-        headers: { Authorization: token },
-      });
-      setMessage(res.data.message);
-      setMessageColor("green");
-      if (viewAll) fetchExpenses();
-    } catch (err) {
-      setMessage("Error deleting expense");
-      setMessageColor("crimson");
+    const confirm = await Swal.fire({
+      title: "Are you sure?",
+      text: "This expense will be marked as deleted.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (confirm.isConfirmed) {
+      try {
+        const res = await axios.delete(`${API_BASE}/expenses/${id}`, {
+          headers: { Authorization: token },
+        });
+        Swal.fire("Deleted!", res.data.message, "success");
+        if (viewAll) fetchExpenses();
+      } catch (err) {
+        Swal.fire("Error!", "Could not delete expense.", "error");
+      }
     }
   };
-
   const handleEdit = (expense) => {
     setForm({
       edate: expense.edate.split("T")[0],
@@ -87,6 +106,11 @@ function Expenses({ role }) {
     });
     setEditingId(expense._id);
     setMessage("");
+
+    // Smooth scroll up; offset handled by CSS on the form
+    requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   };
 
   const cancelEdit = () => {
@@ -100,11 +124,40 @@ function Expenses({ role }) {
     const matchesName = e.ename
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-    const matchesMonth = filterMonth
-      ? new Date(e.edate).getMonth() + 1 === parseInt(filterMonth)
-      : true;
-    return matchesName && matchesMonth;
+    const date = new Date(e.edate);
+    const fromOK = filterFrom ? date >= new Date(filterFrom) : true;
+    const toOK = filterTo ? date <= new Date(filterTo) : true;
+    return matchesName && fromOK && toOK;
   });
+  const exportToCSV = () => {
+    if (filteredExpenses.length === 0) {
+      Swal.fire("No data", "There are no expenses to export.", "info");
+      return;
+    }
+
+    const rows = filteredExpenses.map((e, i) => ({
+      "#": i + 1,
+      Date: new Date(e.edate).toLocaleDateString(),
+      "Name of Cost": e.ename,
+      Amount: e.eamount,
+    }));
+
+    const headers = Object.keys(rows[0] || {}).join(",");
+    const csv = [headers, ...rows.map((r) => Object.values(r).join(","))].join(
+      "\n"
+    );
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+
+    // ✅ Automatically name file with today’s date
+    const today = new Date().toISOString().split("T")[0]; // e.g. "2025-10-06"
+    a.download = `Expense_records_${today}.csv`;
+
+    a.click();
+  };
 
   return (
     <PageWrapper>
@@ -117,7 +170,7 @@ function Expenses({ role }) {
           marginBottom: "30px",
         }}
       >
-        Expenses Management
+        Expense Management
       </h2>
       <div
         style={{
@@ -140,14 +193,26 @@ function Expenses({ role }) {
               borderRadius: "6px",
               cursor: "pointer",
             }}
-            onClick={() => setViewAll(!viewAll)}
+            onClick={() => {
+              const next = !viewAll;
+              setViewAll(next);
+              // Wait a moment for the section to render, then scroll
+              if (next) {
+                setTimeout(() => {
+                  viewRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  });
+                }, 300);
+              }
+            }}
           >
             {viewAll ? "Hide All" : "View All"}
           </button>
         </div>
-
         {/* Expense Form */}
         <form
+          ref={formRef}
           onSubmit={handleSubmit}
           style={{
             background: "#fefefe",
@@ -155,6 +220,7 @@ function Expenses({ role }) {
             borderRadius: 8,
             border: "1px solid #ddd",
             marginBottom: 30,
+            scrollMarginTop: "120px", // 👈 offset above the form
           }}
         >
           <div style={{ marginBottom: 12 }}>
@@ -179,13 +245,18 @@ function Expenses({ role }) {
           </div>
           <div style={{ marginBottom: 12 }}>
             <label>Amount</label>
-            <input
-              type="number"
-              value={form.eamount}
-              onChange={(e) => setForm({ ...form, eamount: e.target.value })}
-              style={{ width: "100%", padding: 8, marginTop: 4 }}
-              required
-            />
+          <input
+  type="number"
+  min="1"
+  step="any"
+  value={form.eamount}
+  onChange={(e) => setForm({ ...form, eamount: e.target.value })}
+  style={{ width: "100%", padding: 8, marginTop: 4 }}
+  required
+  onInvalid={(e) => e.target.setCustomValidity("Value cannot be 0 or negative (-)")}
+  onInput={(e) => e.target.setCustomValidity("")}
+/>
+
           </div>
           <div style={{ textAlign: "center", marginTop: 12 }}>
             <button
@@ -233,17 +304,28 @@ function Expenses({ role }) {
             </p>
           )}
         </form>
-
         {/* List only shows when viewAll is true */}
         {viewAll && (
-          <>
-            {/* Filters */}
+          <div ref={viewRef}>
+            {/* ✅ Section Header */}
+            <h3
+              style={{
+                textAlign: "center",
+                marginBottom: 20,
+                fontWeight: 700,
+              }}
+            >
+              Your Recent Expenses
+            </h3>
+
+            {/* ✅ Filters Row */}
             <div
               style={{
-                marginBottom: 20,
+                marginBottom: 10,
                 display: "flex",
                 gap: "12px",
                 flexWrap: "wrap",
+                alignItems: "flex-end",
               }}
             >
               <input
@@ -253,87 +335,133 @@ function Expenses({ role }) {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{ flex: 1, padding: 8 }}
               />
-              <select
-                value={filterMonth}
-                onChange={(e) => setFilterMonth(e.target.value)}
-                style={{ flex: 1, padding: 8 }}
-              >
-                <option value="">All Months</option>
-                {[...Array(12)].map((_, i) => (
-                  <option key={i + 1} value={i + 1}>
-                    {new Date(0, i).toLocaleString("default", {
-                      month: "long",
-                    })}
-                  </option>
-                ))}
-              </select>
+
+              <div style={{ display: "flex", gap: "10px" }}>
+                <div>
+                  <label style={{ fontSize: "0.9rem" }}>Expense From:</label>
+                  <input
+                    type="date"
+                    value={filterFrom || ""}
+                    onChange={(e) => setFilterFrom(e.target.value)}
+                    style={{ padding: 8, marginLeft: 8 }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: "0.9rem" }}>Expense To:</label>
+                  <input
+                    type="date"
+                    value={filterTo || ""}
+                    onChange={(e) => setFilterTo(e.target.value)}
+                    style={{ padding: 8, marginLeft: 8 }}
+                  />
+                </div>
+              </div>
             </div>
 
-            <h3 style={{ marginBottom: 16 }}>Your Recent Expenses</h3>
+            {/* ✅ Export CSV button aligned right, above the table */}
+            <div style={{ textAlign: "right", marginBottom: 20 }}>
+              <button
+                onClick={exportToCSV}
+                style={{
+                  background: "#0d47a1",
+                  color: "#fff",
+                  padding: "10px 24px",
+                  borderRadius: 6,
+                  border: "none",
+                  cursor: "pointer",
+                  fontWeight: "bold",
+                }}
+              >
+                Export CSV
+              </button>
+            </div>
+
             {filteredExpenses.length === 0 ? (
               <p>No expenses found.</p>
             ) : (
-              filteredExpenses.map((e) => (
-                <div
-                  key={e._id}
-                  style={{
-                    background: "#fafafa",
-                    border: "1px solid #ddd",
-                    borderRadius: 8,
-                    padding: 16,
-                    marginBottom: 12,
-                  }}
-                >
-                  <p>
-                    <strong>Date:</strong>{" "}
-                    {new Date(e.edate).toLocaleDateString()}
-                  </p>
-                  <p>
-                    <strong>Name of cost:</strong> {e.ename}
-                  </p>
-                  <p>
-                    <strong>Amount:</strong> {e.eamount} ৳
-                  </p>
-                  <div style={{ marginTop: 8 }}>
-                    {/* Only admin sees Edit/Delete */}
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  border: "1px solid #ddd",
+                  marginTop: 20,
+                }}
+              >
+                <thead>
+                  <tr style={{ background: "#f2f2f2" }}>
+                    <th style={{ border: "1px solid #ddd", padding: 8 }}>#</th>
+                    <th style={{ border: "1px solid #ddd", padding: 8 }}>
+                      Date
+                    </th>
+                    <th style={{ border: "1px solid #ddd", padding: 8 }}>
+                      Name of Cost
+                    </th>
+                    <th style={{ border: "1px solid #ddd", padding: 8 }}>
+                      Amount (৳)
+                    </th>
                     {role === "admin" && (
-                      <>
-                        <button
-                          onClick={() => handleEdit(e)}
-                          style={{
-                            background: "#007bff",
-                            color: "#fff",
-                            padding: "6px 12px",
-                            marginRight: 8,
-                            border: "none",
-                            borderRadius: 4,
-                            cursor: "pointer",
-                          }}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(e._id)}
-                          style={{
-                            background: "#dc3545",
-                            color: "#fff",
-                            padding: "6px 12px",
-                            border: "none",
-                            borderRadius: 4,
-                            cursor: "pointer",
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </>
+                      <th style={{ border: "1px solid #ddd", padding: 8 }}>
+                        Actions
+                      </th>
                     )}
-                  </div>
-                </div>
-              ))
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredExpenses.map((e, i) => (
+                    <tr key={e._id}>
+                      <td style={{ border: "1px solid #ddd", padding: 8 }}>
+                        {i + 1}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: 8 }}>
+                        {new Date(e.edate).toLocaleDateString()}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: 8 }}>
+                        {e.ename}
+                      </td>
+                      <td style={{ border: "1px solid #ddd", padding: 8 }}>
+                        {e.eamount}
+                      </td>
+                      {role === "admin" && (
+                        <td style={{ border: "1px solid #ddd", padding: 8 }}>
+                          <button
+                            onClick={() => handleEdit(e)}
+                            style={{
+                              background: "#007bff",
+                              color: "#fff",
+                              padding: "6px 12px",
+                              border: "none",
+                              borderRadius: 4,
+                              marginRight: 8,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDelete(e._id)}
+                            style={{
+                              background: "#dc3545",
+                              color: "#fff",
+                              padding: "6px 12px",
+                              border: "none",
+                              borderRadius: 4,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
-          </>
-        )}
-      </div>
+          </div>
+        )}{" "}
+        {/* ✅ closes viewAll condition */}
+      </div>{" "}
+      {/* ✅ closes the main white container */}
     </PageWrapper>
   );
 }
