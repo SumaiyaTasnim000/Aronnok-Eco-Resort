@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import axios from "axios";
 import Swal from "sweetalert2";
 import PageWrapper from "../components/PageWrapper";
@@ -29,6 +29,9 @@ function Salary({ role }) {
   const [filterStaffName, setFilterStaffName] = useState("");
   const [filterFrom, setFilterFrom] = useState("");
   const [filterUntil, setFilterUntil] = useState("");
+  // Refs for scroll behavior
+  const formRef = useRef(null);
+  const viewRef = useRef(null);
 
   // ---------------- Fetch helpers ----------------
   const axiosAuth = useMemo(() => {
@@ -84,6 +87,17 @@ function Salary({ role }) {
       }
     }
   }, [form.spaidFrom, form.spaidUntil]);
+  // ✅ Auto-scroll up to form when an edit starts
+  // ✅ Force full-page scroll when editing starts
+  useEffect(() => {
+    if (editingId) {
+      setTimeout(() => {
+        const yOffset =
+          formRef.current?.getBoundingClientRect().top + window.scrollY - 100; // 100px offset from top
+        window.scrollTo({ top: yOffset, behavior: "smooth" });
+      }, 200); // slight delay ensures DOM fully re-rendered
+    }
+  }, [editingId]);
 
   // ---------------- Derived lists ----------------
   const uniqueStaffNames = useMemo(
@@ -99,14 +113,18 @@ function Salary({ role }) {
   // When sname changes, default stype to that staff's type (first match)
   // When sname changes, auto-fill type & previous monthly salary
   // ✅ Auto-fill staff type & monthly salary when selecting a staff name
+  // ✅ Auto-fill staff type & monthly salary when selecting a staff name
   useEffect(() => {
     if (form.sname && staffs.length > 0) {
-      const match = staffs.find((s) => s._id === form.staffId);
+      // Find staff by name, since staffId is not stored in the form
+      const match = staffs.find(
+        (s) => s.sname.toLowerCase() === form.sname.toLowerCase()
+      );
       if (match) {
         setForm((prev) => ({
           ...prev,
-          stype: match.stype || prev.stype,
-          smonthly: match.smonthly || prev.smonthly || "",
+          stype: match.stype || "",
+          smonthly: match.smonthly || "",
         }));
       }
     }
@@ -273,6 +291,28 @@ function Salary({ role }) {
         return;
       }
     }
+    // ✅ Check for duplicate salary record for same staff and same date range
+    const duplicate = salaries.find((s) => {
+      const sameName =
+        s.staff?.sname.toLowerCase() === form.sname.toLowerCase();
+      const sameFrom =
+        new Date(s.spaidFrom).toISOString().split("T")[0] === form.spaidFrom;
+      const sameUntil =
+        new Date(s.spaidUntil).toISOString().split("T")[0] === form.spaidUntil;
+      return sameName && sameFrom && sameUntil;
+    });
+
+    if (duplicate && !editingId) {
+      await Swal.fire({
+        icon: "error",
+        title: "Duplicate Entry",
+        html: `You have already entered the data for staff <b>${form.sname}</b><br>
+           from <b>${form.spaidFrom}</b> to <b>${form.spaidUntil}</b>.`,
+        confirmButtonText: "Go Back",
+        confirmButtonColor: "#3085d6",
+      });
+      return; // 🚫 Stop submission
+    }
 
     try {
       if (editingId) {
@@ -359,7 +399,11 @@ function Salary({ role }) {
     });
     setEditingId(s._id);
     setMessage("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    // ✅ Smooth scroll up, exactly like Expense page
+    requestAnimationFrame(() => {
+      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   };
 
   const cancelEdit = () => {
@@ -436,7 +480,18 @@ function Salary({ role }) {
               borderRadius: "6px",
               cursor: "pointer",
             }}
-            onClick={() => setViewAll(!viewAll)}
+            onClick={() => {
+              const next = !viewAll;
+              setViewAll(next);
+              if (next) {
+                setTimeout(() => {
+                  viewRef.current?.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start",
+                  });
+                }, 300);
+              }
+            }}
           >
             {viewAll ? "Hide All" : "View All"}
           </button>
@@ -444,6 +499,7 @@ function Salary({ role }) {
 
         {/* Form */}
         <form
+          ref={formRef}
           onSubmit={handleSubmit}
           style={{
             background: "#fefefe",
@@ -451,6 +507,7 @@ function Salary({ role }) {
             borderRadius: 8,
             border: "1px solid #ddd",
             marginBottom: 30,
+            scrollMarginTop: "120px",
           }}
         >
           {/* Staff Name + Add */}
@@ -554,6 +611,7 @@ function Salary({ role }) {
                   padding: "8px 10px",
                   background: "#bd6868ff",
                   fontWeight: "bold",
+                  textAlign: "center", // ✅ centers the text
                 }}
               >
                 Delete Staffs
@@ -740,9 +798,18 @@ function Salary({ role }) {
         </form>
 
         {/* View: Filters + Table */}
+        {/* ✅ View Section with scroll ref */}
         {viewAll && (
-          <>
-            <h3 style={{ marginBottom: 16 }}>Salary Records</h3>
+          <div ref={viewRef}>
+            <h3
+              style={{
+                textAlign: "center",
+                marginBottom: 20,
+                fontWeight: "700",
+              }}
+            >
+              Salary Records
+            </h3>
 
             {/* Filters */}
             <div
@@ -787,6 +854,7 @@ function Salary({ role }) {
                 />
               </div>
             </div>
+
             {/* Export CSV Button */}
             <div style={{ textAlign: "right", marginBottom: 10 }}>
               <button
@@ -929,7 +997,7 @@ function Salary({ role }) {
                 </tbody>
               </table>
             </div>
-          </>
+          </div>
         )}
       </div>
     </PageWrapper>
