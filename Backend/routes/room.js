@@ -5,6 +5,15 @@ const Room = require("../models/Room");
 const Booking = require("../models/Booking");
 const auth = require("../middleware/auth");
 
+router.get("/", async (req, res) => {
+  try {
+    const rooms = await Room.find().sort({ rid: 1 });
+    res.json(rooms);
+  } catch (err) {
+    console.error("Error fetching rooms:", err);
+    res.status(500).json({ error: "Failed to fetch rooms" });
+  }
+});
 // ✅ Check room availability (public-ish)
 router.post("/check", async (req, res) => {
   try {

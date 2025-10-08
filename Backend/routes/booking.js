@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 const Booking = require("../models/Booking");
 const auth = require("../middleware/auth");
+const Room = require("../models/Room");
 
 // 📌 Create booking (Customer + Manager + Admin)
 router.post("/", auth(["customer", "manager", "admin"]), async (req, res) => {
@@ -88,16 +89,37 @@ router.put("/:id", auth("admin"), async (req, res) => {
 });
 
 // 📌 Soft delete booking (Admin only)
+// 📌 Soft delete booking (Admin only)
 router.patch("/:id/delete", auth("admin"), async (req, res) => {
   try {
+    // Mark the booking as deleted
     const deleted = await Booking.findByIdAndUpdate(
       req.params.id,
       { isDeleted: true },
       { new: true }
     );
+
     if (!deleted) return res.status(404).json({ error: "Booking not found" });
-    res.json({ message: "Booking soft deleted ✅", booking: deleted });
+
+    // 🟢 Recalculate if that room still has any active bookings
+    const activeBookings = await Booking.countDocuments({
+      rid: deleted.rid,
+      isDeleted: false,
+    });
+
+    // 🟢 Update the corresponding Room's isBooked flag
+    await Room.findOneAndUpdate(
+      { rid: deleted.rid },
+      { $set: { isBooked: activeBookings > 0 } }
+    );
+
+    res.json({
+      message: "Booking soft deleted ✅",
+      booking: deleted,
+      updatedRoom: deleted.rid,
+    });
   } catch (err) {
+    console.error("❌ Error deleting booking:", err.message);
     res.status(400).json({ error: err.message });
   }
 });

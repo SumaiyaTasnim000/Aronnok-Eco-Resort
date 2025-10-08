@@ -9,6 +9,7 @@ const roomRoutes = require("./routes/room");
 const bookingRoutes = require("./routes/booking");
 const expensesRoutes = require("./routes/expenses");
 const salaryRoutes = require("./routes/salaries");
+const dashboardRoutes = require("./routes/dashboard");
 
 const app = express();
 app.use(cors());
@@ -25,6 +26,7 @@ app.use("/api/expenses", expensesRoutes);
 app.use("/api/salaries", salaryRoutes);
 app.use("/api/restaurants", require("./routes/restaurants"));
 app.use("/api/staffs", require("./routes/staffs"));
+app.use("/api/dashboard", dashboardRoutes);
 
 const PORT = process.env.PORT || 5001;
 

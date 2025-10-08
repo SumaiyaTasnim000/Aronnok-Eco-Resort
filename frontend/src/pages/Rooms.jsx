@@ -1,8 +1,9 @@
 // frontend/src/pages/Rooms.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import PageWrapper from "../components/PageWrapper";
 import Swal from "sweetalert2";
+import { useLocation } from "react-router-dom";
 
 function Rooms({ role }) {
   const token = localStorage.getItem("token");
@@ -51,6 +52,10 @@ function Rooms({ role }) {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  // ✅ Detect redirect from Dashboard (rid + date)
+  const location = useLocation();
+  const redirectedRid = location.state?.rid;
+  const redirectedDate = location.state?.startDate;
 
   if (!token) {
     alert("You are not logged in! Please log in to continue.");
@@ -87,7 +92,7 @@ function Rooms({ role }) {
 
       const data = (res.data || []).map((r) => ({
         ...r,
-        available: typeof r.available === "boolean" ? r.available : !r.isBooked,
+        available: r.available === true, // ✅ directly use backend's "available"
       }));
 
       setAvailableRooms(data);
@@ -105,6 +110,60 @@ function Rooms({ role }) {
       setLoading(false);
     }
   };
+  // ✅ Automatically show and open the clicked room card when redirected from Dashboard
+  useEffect(() => {
+    if (!redirectedRid || !redirectedDate) return;
+
+    // Step 1: set both start and end date first
+    setStartDate(redirectedDate);
+    setEndDate(redirectedDate);
+
+    // Step 2: Wait until React updates the state, then fetch data
+    const timer = setTimeout(async () => {
+      try {
+        const res = await axios.post(
+          `${API_BASE}/rooms/check`,
+          { startDate: redirectedDate, endDate: redirectedDate },
+          axiosConfig
+        );
+
+        const data = (res.data || []).map((r) => ({
+          ...r,
+          available: r.available === true,
+        }));
+        setAvailableRooms(data);
+
+        // Step 3: Find that room in the fetched list
+        const clickedRoom = data.find((r) => r.rid === redirectedRid);
+
+        if (clickedRoom) {
+          // if available → open booking form
+          if (clickedRoom.available) {
+            setSelectedRoom(clickedRoom);
+          } else {
+            // if booked → open the booking details
+            await fetchBookingDetails(clickedRoom);
+          }
+
+          // Step 4: scroll to the card and highlight it
+          setTimeout(() => {
+            const target = document.getElementById(`room-${redirectedRid}`);
+            if (target) {
+              target.scrollIntoView({ behavior: "smooth", block: "center" });
+              target.style.border = "3px solid #1976d2";
+              setTimeout(() => {
+                target.style.border = "2px solid #020202ff";
+              }, 1500);
+            }
+          }, 400);
+        }
+      } catch (err) {
+        console.error("Redirect booking load error:", err);
+      }
+    }, 400);
+
+    return () => clearTimeout(timer);
+  }, [redirectedRid, redirectedDate]);
 
   // ✅ Start booking a room
   const handleBookNow = (room) => {
@@ -319,6 +378,7 @@ function Rooms({ role }) {
       <div>
         {availableRooms.map((room) => (
           <div
+            id={`room-${room.rid}`} // ✅ added for scroll & highlight
             key={room.rid}
             style={{
               width: 760,
@@ -382,7 +442,6 @@ function Rooms({ role }) {
                 </button>
               )}
 
-              {/* Booking form */}
               {/* Booking form */}
               {selectedRoom?.rid === room.rid && (
                 <form
