@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 import Navbar from "../components/Navbar";
+import PageWrapper from "../components/PageWrapper";
 
 function Login({ onLogin }) {
   const [uemail, setUemail] = useState("");
@@ -27,10 +28,11 @@ function Login({ onLogin }) {
   };
 
   return (
-    <div style={styles.page}>
+    <PageWrapper>
       <Navbar />
 
-      <div style={styles.container}>
+      {/* ✅ Center the login form */}
+      <div style={styles.centerBox}>
         <form onSubmit={handleSubmit} style={styles.card}>
           <h2 style={styles.title}>🔐 Login</h2>
           {error && <p style={styles.error}>{error}</p>}
@@ -104,7 +106,7 @@ function Login({ onLogin }) {
           </button>
         </form>
       </div>
-    </div>
+    </PageWrapper>
   );
 }
 
@@ -119,6 +121,13 @@ const styles = {
     alignItems: "center",
     height: "calc(100vh - 60px)",
     paddingTop: "60px",
+  },
+  centerBox: {
+    width: "100%",
+    height: "70vh",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
   },
   card: {
     background: "#fff",
