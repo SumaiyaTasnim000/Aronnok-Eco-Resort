@@ -34,6 +34,7 @@ router.post("/", auth(["customer", "manager", "admin"]), async (req, res) => {
       advanceReceiver: advanceReceiver || "",
       due: due || 0,
       dueReceiver: dueReceiver || "",
+      bcreatedByUid: req.user?.uid || "system",
     });
 
     await booking.save();

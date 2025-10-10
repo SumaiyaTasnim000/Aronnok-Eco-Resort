@@ -551,7 +551,7 @@ function Salary({ role }) {
                 color: "#fff",
               }}
             >
-              + Add
+              + New
             </button>
           </div>
 
