@@ -14,7 +14,7 @@ const PageWrapper = ({ children }) => {
         alignItems: "flex-start",
         padding: "100px 20px",
         position: "relative",
-        overflowX: "hidden",
+        overflow: "visible",
       }}
     >
       {/* soft glowing circles for subtle hue effect */}

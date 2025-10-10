@@ -4,6 +4,15 @@ import axios from "axios";
 import PageWrapper from "../components/PageWrapper";
 import Swal from "sweetalert2";
 import { useLocation } from "react-router-dom";
+// ✅ Helper to format date as MM/DD/YYYY
+const formatDate = (dateStr) => {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  if (isNaN(d)) return "—";
+  return `${String(d.getMonth() + 1).padStart(2, "0")}/${String(
+    d.getDate()
+  ).padStart(2, "0")}/${d.getFullYear()}`;
+};
 
 function Rooms({ role }) {
   const token = localStorage.getItem("token");
@@ -453,6 +462,29 @@ function Rooms({ role }) {
                     gap: 8,
                   }}
                 >
+                  {/* Selected Date Range Display */}
+                  <div
+                    style={{
+                      marginBottom: "6px",
+                      background: "#f0f4ff",
+                      padding: "6px 10px",
+                      borderRadius: "6px",
+                      color: "#0d47a1",
+                      fontWeight: "600",
+                      fontSize: "14px",
+                      textAlign: "center",
+                    }}
+                  >
+                    Room booking from{" "}
+                    <span style={{ fontWeight: "700" }}>
+                      {formatDate(startDate)}
+                    </span>{" "}
+                    to{" "}
+                    <span style={{ fontWeight: "700" }}>
+                      {formatDate(endDate)}
+                    </span>
+                  </div>
+
                   {/* Customer Name */}
                   <input
                     placeholder="Customer name"
@@ -629,7 +661,6 @@ function Rooms({ role }) {
               )}
 
               {/* Booking details */}
-              {/* Booking details */}
               {viewBooking && viewBooking.rid === room.rid && (
                 <div
                   style={{
@@ -644,6 +675,29 @@ function Rooms({ role }) {
                   }}
                 >
                   <div style={{ marginBottom: "10px" }}>
+                    {/* Date Range Header */}
+                    <div
+                      style={{
+                        background: "#e3f2fd",
+                        padding: "6px 10px",
+                        borderRadius: "6px",
+                        color: "#0d47a1",
+                        fontWeight: "600",
+                        fontSize: "14px",
+                        marginBottom: "10px",
+                        textAlign: "center",
+                      }}
+                    >
+                      Room booked from{" "}
+                      <span style={{ fontWeight: "700" }}>
+                        {formatDate(viewBooking.startDate)}
+                      </span>{" "}
+                      to{" "}
+                      <span style={{ fontWeight: "700" }}>
+                        {formatDate(viewBooking.endDate)}
+                      </span>
+                    </div>
+
                     <p>
                       <strong>Customer:</strong> {viewBooking.cname || "—"}
                     </p>
@@ -724,7 +778,7 @@ function Rooms({ role }) {
                           fontWeight: "600",
                         }}
                       >
-                        Delete
+                        Cancel Booking
                       </button>
                     </div>
                   )}

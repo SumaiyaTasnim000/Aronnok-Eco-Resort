@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import PageWrapper from "../components/PageWrapper";
+console.log("✅ CalendarView rendering now");
 
 function CalendarView() {
   const API_BASE = "http://localhost:5001/api";
@@ -12,6 +14,22 @@ function CalendarView() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [visibleDates, setVisibleDates] = useState([]);
+  // ✅ Auto-set 7-day window (today ± 3 days) when page opens
+  // ✅ Auto-set current week's Monday → Sunday when page opens
+  useEffect(() => {
+    const today = new Date();
+    const day = today.getDay(); // 0 = Sunday
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() + diffToMonday);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+    setStartDate(startOfWeek.toISOString().slice(0, 10));
+    setEndDate(endOfWeek.toISOString().slice(0, 10));
+  }, []);
 
   // -------------------- Fetch data --------------------
   const fetchData = async () => {
@@ -38,19 +56,19 @@ function CalendarView() {
   const generateVisibleDates = (from, to) => {
     const start = new Date(from);
     const end = new Date(to);
-
-    // Add ±3 days window
-    const minDate = new Date(start);
-    minDate.setDate(start.getDate() - 3);
-    const maxDate = new Date(end);
-    maxDate.setDate(end.getDate() + 3);
-
     const dates = [];
-    for (let d = new Date(minDate); d <= maxDate; d.setDate(d.getDate() + 1)) {
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       dates.push(new Date(d));
     }
     setVisibleDates(dates);
   };
+
+  // ✅ Fetch automatically once startDate + endDate are ready
+  useEffect(() => {
+    if (startDate && endDate) {
+      fetchData();
+    }
+  }, [startDate, endDate]);
 
   // -------------------- Check if room is booked --------------------
   const isBooked = (rid, date) => {
@@ -64,14 +82,17 @@ function CalendarView() {
 
   // -------------------- Week Navigation --------------------
   const shiftWeek = (direction) => {
-    if (visibleDates.length === 0) return;
+    if (!startDate || !endDate) return;
     const shift = direction === "next" ? 7 : -7;
-    const newDates = visibleDates.map((d) => {
-      const newD = new Date(d);
-      newD.setDate(d.getDate() + shift);
-      return newD;
-    });
-    setVisibleDates(newDates);
+
+    const newStart = new Date(startDate);
+    newStart.setDate(newStart.getDate() + shift);
+
+    const newEnd = new Date(endDate);
+    newEnd.setDate(newEnd.getDate() + shift);
+
+    setStartDate(newStart.toISOString().slice(0, 10));
+    setEndDate(newEnd.toISOString().slice(0, 10));
   };
 
   // -------------------- Cell Click --------------------
@@ -100,190 +121,192 @@ function CalendarView() {
   };
 
   return (
-    <div
-      style={{
-        padding: "40px",
-        background: "#f0f8ff",
-        minHeight: "100vh",
-      }}
-    >
-      <h2
-        style={{
-          textAlign: "center",
-          fontSize: "1.8rem",
-          color: "#0d47a1",
-          fontWeight: "700",
-          marginBottom: "20px",
-        }}
-      >
-        Room Availability Calendar
-      </h2>
+    <PageWrapper>
+      <div style={{ width: "100%", overflowX: "auto", paddingTop: "10px" }}>
+        {/* 🌿 Header */}
+        <h2
+          style={{
+            textAlign: "center",
+            fontSize: "1.8rem",
+            color: "#0d47a1",
+            fontWeight: 700,
+            marginBottom: "25px",
+          }}
+        >
+          Aronnok Eco Resort Dashboard
+        </h2>
 
-      {/* Date Filter */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          gap: "10px",
-          marginBottom: "20px",
-        }}
-      >
-        <label>
-          From:{" "}
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
-        </label>
-        <label>
-          To:{" "}
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-          />
-        </label>
-        <button
-          onClick={fetchData}
+        {/* 🌿 Date Selector */}
+        <div
           style={{
-            background: "#1565c0",
-            color: "#fff",
-            padding: "6px 14px",
-            borderRadius: "6px",
-            border: "none",
-            cursor: "pointer",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "10px",
+            marginBottom: "20px",
           }}
         >
-          Filter
-        </button>
-      </div>
+          <label style={{ fontWeight: 600 }}>
+            Select Week Starting From:{" "}
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => {
+                const selected = new Date(e.target.value);
+                const day = selected.getDay();
+                const diffToMonday = day === 0 ? -6 : 1 - day;
+                const startOfWeek = new Date(selected);
+                startOfWeek.setDate(selected.getDate() + diffToMonday);
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+                setStartDate(startOfWeek.toISOString().slice(0, 10));
+                setEndDate(endOfWeek.toISOString().slice(0, 10));
+              }}
+              style={{
+                padding: "6px 10px",
+                borderRadius: "6px",
+                border: "1px solid #ccc",
+                background: "#fff",
+                cursor: "pointer",
+              }}
+            />
+          </label>
+        </div>
 
-      {/* Week Navigation */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          marginBottom: "10px",
-          gap: "10px",
-        }}
-      >
-        <button
-          onClick={() => shiftWeek("prev")}
+        {/* 🌿 Week Navigation */}
+        <div
           style={{
-            background: "#999",
-            color: "white",
-            padding: "5px 10px",
-            borderRadius: "6px",
+            display: "flex",
+            justifyContent: "flex-end",
+            marginBottom: "15px",
+            gap: "10px",
           }}
         >
-          ← Prev Week
-        </button>
-        <button
-          onClick={() => shiftWeek("next")}
-          style={{
-            background: "#999",
-            color: "white",
-            padding: "5px 10px",
-            borderRadius: "6px",
-          }}
-        >
-          Next Week →
-        </button>
-      </div>
+          <button
+            onClick={() => shiftWeek("prev")}
+            style={{
+              background: "#64b5f6",
+              color: "white",
+              padding: "6px 12px",
+              borderRadius: "6px",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            ← Previous Week
+          </button>
+          <button
+            onClick={() => shiftWeek("next")}
+            style={{
+              background: "#64b5f6",
+              color: "white",
+              padding: "6px 12px",
+              borderRadius: "6px",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            Next Week →
+          </button>
+        </div>
 
-      {/* Calendar Table */}
-      <div style={{ overflowX: "auto" }}>
-        <table
-          style={{
-            borderCollapse: "collapse",
-            width: "100%",
-            background: "white",
-          }}
-        >
-          <thead>
-            <tr style={{ background: "#1976d2", color: "white" }}>
-              <th style={{ padding: "8px", border: "1px solid #ccc" }}>
-                Room Category
-              </th>
-              <th style={{ padding: "8px", border: "1px solid #ccc" }}>Room</th>
-              {visibleDates.map((d, i) => (
-                <th
-                  key={i}
-                  style={{ padding: "6px", border: "1px solid #ccc" }}
-                >
-                  {d.toLocaleDateString("en-GB", {
-                    day: "2-digit",
-                    month: "2-digit",
-                  })}
+        {/* 🌿 Calendar Table */}
+        <div style={{ overflowX: "auto" }}>
+          <table
+            style={{
+              borderCollapse: "collapse",
+              width: "100%",
+              background: "white",
+            }}
+          >
+            <thead>
+              <tr style={{ background: "#1976d2", color: "white" }}>
+                <th style={{ padding: "8px", border: "1px solid #ccc" }}>
+                  Category
                 </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {/* ✅ Group rooms by category */}
-            {Object.entries(
-              rooms.reduce((acc, room) => {
-                if (!acc[room.rcategory]) acc[room.rcategory] = [];
-                acc[room.rcategory].push(room);
-                return acc;
-              }, {})
-            ).map(([category, categoryRooms]) => (
-              <React.Fragment key={category}>
-                {categoryRooms.map((room, index) => (
-                  <tr key={room.rid}>
-                    {/* Show category only once per group */}
-                    {index === 0 && (
+                <th style={{ padding: "8px", border: "1px solid #ccc" }}>
+                  Room Name
+                </th>
+                {visibleDates.map((d, i) => (
+                  <th
+                    key={i}
+                    style={{
+                      padding: "6px",
+                      border: "1px solid #ccc",
+                      textAlign: "center",
+                    }}
+                  >
+                    {d.toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "2-digit",
+                    })}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+
+            <tbody>
+              {Object.entries(
+                rooms.reduce((acc, room) => {
+                  if (!acc[room.rcategory]) acc[room.rcategory] = [];
+                  acc[room.rcategory].push(room);
+                  return acc;
+                }, {})
+              ).map(([category, categoryRooms]) => (
+                <React.Fragment key={category}>
+                  {categoryRooms.map((room, idx) => (
+                    <tr key={room.rid}>
+                      {idx === 0 && (
+                        <td
+                          rowSpan={categoryRooms.length}
+                          style={{
+                            background: "#e3f2fd",
+                            fontWeight: "bold",
+                            textAlign: "center",
+                            verticalAlign: "middle",
+                            border: "1px solid #ccc",
+                          }}
+                        >
+                          {category}
+                        </td>
+                      )}
+
                       <td
-                        rowSpan={categoryRooms.length}
                         style={{
-                          fontWeight: "bold",
-                          background: "#e3f2fd",
-                          textAlign: "center",
-                          verticalAlign: "middle",
                           border: "1px solid #ccc",
+                          padding: "6px",
+                          textAlign: "center",
                         }}
                       >
-                        {category}
+                        {room.rname}
                       </td>
-                    )}
 
-                    <td
-                      style={{
-                        border: "1px solid #ccc",
-                        padding: "6px",
-                        fontWeight: 500,
-                      }}
-                    >
-                      {room.rname}
-                    </td>
-
-                    {visibleDates.map((date, i) => {
-                      const booked = isBooked(room.rid, date);
-                      return (
-                        <td
-                          key={i}
-                          onClick={() => handleCellClick(room, date)}
-                          style={{
-                            border: "1px solid #ccc",
-                            width: "40px",
-                            height: "35px",
-                            background: booked ? "#e53935" : "#43a047",
-                            cursor: "pointer",
-                          }}
-                          title={booked ? "Booked" : "Available"}
-                        ></td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
+                      {visibleDates.map((date, i) => {
+                        const booked = isBooked(room.rid, date);
+                        return (
+                          <td
+                            key={i}
+                            onClick={() => handleCellClick(room, date)}
+                            style={{
+                              border: "1px solid #ccc",
+                              width: "40px",
+                              height: "35px",
+                              background: booked ? "#e53935" : "#43a047",
+                              cursor: "pointer",
+                            }}
+                            title={booked ? "Booked" : "Available"}
+                          ></td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    </PageWrapper>
   );
 }
 

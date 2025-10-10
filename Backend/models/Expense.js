@@ -6,6 +6,11 @@ const expenseSchema = new mongoose.Schema(
     edate: { type: Date, required: true },
     ename: { type: String, required: true },
     eamount: { type: Number, required: true },
+    ecategoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "ExpenseCategory", // ✅ normalized reference
+      required: true,
+    },
     ecreatedByUid: { type: Number }, // Who created (from JWT)
     eisDeleted: { type: Boolean, default: false },
   },

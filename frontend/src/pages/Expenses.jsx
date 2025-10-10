@@ -14,27 +14,51 @@ function Expenses({ role }) {
 
   const [viewAll, setViewAll] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  // Categories state
+  const [categories, setCategories] = useState([]);
 
-  // Filter
+  // Filters
   const [searchTerm, setSearchTerm] = useState("");
   const [filterFrom, setFilterFrom] = useState("");
   const [filterTo, setFilterTo] = useState("");
   const viewRef = useRef(null);
   const formRef = useRef(null);
+
   // Fetch all expenses
   const fetchExpenses = async () => {
     try {
       const res = await axios.get(`${API_BASE}/expenses`, {
         headers: { Authorization: token },
       });
-      // ✅ both admin and manager see all entries
       setExpenses(res.data.filter((e) => !e.eisDeleted));
     } catch (err) {
       console.error("fetchExpenses error:", err.response?.data || err.message);
     }
   };
+  // 🆕 Fetch all categories (add this right below)
+  const fetchCategories = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/expenseCategories`, {
+        headers: { Authorization: token },
+      });
+      setCategories(res.data);
+    } catch (err) {
+      console.error(
+        "fetchCategories error:",
+        err.response?.data || err.message
+      );
+    }
+  };
 
-  // Load data when viewAll toggled
+  useEffect(() => {
+    if (viewAll) fetchExpenses();
+    else setExpenses([]);
+  }, [viewAll]);
+
+  // 🆕 Trigger fetchCategories once when page loads
+  useEffect(() => {
+    fetchCategories();
+  }, []);
   useEffect(() => {
     if (viewAll) fetchExpenses();
     else setExpenses([]);
@@ -44,11 +68,10 @@ function Expenses({ role }) {
     e.preventDefault();
     setMessage("");
 
-    // ✅ Inline validation: amount must be positive and non-zero
     if (!form.eamount || Number(form.eamount) <= 0) {
       setMessage("Amount must be greater than 0");
       setMessageColor("crimson");
-      return; // stop submission
+      return;
     }
 
     try {
@@ -66,10 +89,10 @@ function Expenses({ role }) {
         setMessageColor("green");
       }
 
-      setForm({ edate: "", ename: "", eamount: "" });
+      setForm({ edate: "", ename: "", eamount: "", ecategoryId: "" });
       setEditingId(null);
       if (viewAll) fetchExpenses();
-    } catch (err) {
+    } catch {
       setMessage("Error saving expense");
       setMessageColor("crimson");
     }
@@ -93,11 +116,12 @@ function Expenses({ role }) {
         });
         Swal.fire("Deleted!", res.data.message, "success");
         if (viewAll) fetchExpenses();
-      } catch (err) {
+      } catch {
         Swal.fire("Error!", "Could not delete expense.", "error");
       }
     }
   };
+
   const handleEdit = (expense) => {
     setForm({
       edate: expense.edate.split("T")[0],
@@ -107,9 +131,16 @@ function Expenses({ role }) {
     setEditingId(expense._id);
     setMessage("");
 
-    // Smooth scroll up; offset handled by CSS on the form
+    // Smooth scroll to form
     requestAnimationFrame(() => {
-      formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (formRef.current) {
+        const yOffset = -80;
+        const y =
+          formRef.current.getBoundingClientRect().top +
+          window.pageYOffset +
+          yOffset;
+        window.scrollTo({ top: y, behavior: "smooth" });
+      }
     });
   };
 
@@ -119,16 +150,21 @@ function Expenses({ role }) {
     setMessage("");
   };
 
-  // Filtered expenses
   const filteredExpenses = expenses.filter((e) => {
-    const matchesName = e.ename
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+    const lowerSearch = searchTerm.toLowerCase();
+
+    // ✅ Match either Name of Cost OR Category name
+    const matches =
+      e.ename.toLowerCase().includes(lowerSearch) ||
+      e.ecategoryId?.expcatname?.toLowerCase().includes(lowerSearch);
+
     const date = new Date(e.edate);
     const fromOK = filterFrom ? date >= new Date(filterFrom) : true;
     const toOK = filterTo ? date <= new Date(filterTo) : true;
-    return matchesName && fromOK && toOK;
+
+    return matches && fromOK && toOK;
   });
+
   const exportToCSV = () => {
     if (filteredExpenses.length === 0) {
       Swal.fire("No data", "There are no expenses to export.", "info");
@@ -138,6 +174,7 @@ function Expenses({ role }) {
     const rows = filteredExpenses.map((e, i) => ({
       "#": i + 1,
       Date: new Date(e.edate).toLocaleDateString(),
+      Category: e.ecategoryId?.expcatname || "—",
       "Name of Cost": e.ename,
       Amount: e.eamount,
     }));
@@ -152,10 +189,8 @@ function Expenses({ role }) {
     const a = document.createElement("a");
     a.href = url;
 
-    // ✅ Automatically name file with today’s date
-    const today = new Date().toISOString().split("T")[0]; // e.g. "2025-10-06"
+    const today = new Date().toISOString().split("T")[0];
     a.download = `Expense_records_${today}.csv`;
-
     a.click();
   };
 
@@ -172,18 +207,19 @@ function Expenses({ role }) {
       >
         Expense Management
       </h2>
+
       <div
         style={{
           width: "100%",
-          maxWidth: "1000px",
-          background: "#fff",
-          padding: "30px",
-          borderRadius: "12px",
-          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-          margin: "0 auto",
+          maxWidth: "850px",
+          background: "#ffffff",
+          borderRadius: "22px",
+          padding: "45px 50px",
+          boxShadow: "0 15px 45px rgba(0, 0, 0, 0.15)",
+          margin: "80px auto",
         }}
       >
-        {/* ✅ View All / Hide All toggle for both admin and manager */}
+        {/* ✅ Toggle Button */}
         <div style={{ textAlign: "center", marginBottom: 20 }}>
           <button
             style={{
@@ -196,7 +232,6 @@ function Expenses({ role }) {
             onClick={() => {
               const next = !viewAll;
               setViewAll(next);
-              // Wait a moment for the section to render, then scroll
               if (next) {
                 setTimeout(() => {
                   viewRef.current?.scrollIntoView({
@@ -210,7 +245,8 @@ function Expenses({ role }) {
             {viewAll ? "Hide All" : "View All"}
           </button>
         </div>
-        {/* Expense Form */}
+
+        {/* ✅ Expense Form */}
         <form
           ref={formRef}
           onSubmit={handleSubmit}
@@ -220,7 +256,7 @@ function Expenses({ role }) {
             borderRadius: 8,
             border: "1px solid #ddd",
             marginBottom: 30,
-            scrollMarginTop: "120px", // 👈 offset above the form
+            scrollMarginTop: "120px",
           }}
         >
           <div style={{ marginBottom: 12 }}>
@@ -229,35 +265,257 @@ function Expenses({ role }) {
               type="date"
               value={form.edate}
               onChange={(e) => setForm({ ...form, edate: e.target.value })}
-              style={{ width: "100%", padding: 8, marginTop: 4 }}
+              style={{
+                width: "100%",
+                padding: 8,
+                marginTop: 4,
+                borderRadius: 4,
+                border: "1px solid #ccc",
+              }}
               required
             />
           </div>
+          {/* Category Dropdown */}
+          <div style={{ marginBottom: 12 }}>
+            <label>Expense Category</label>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <select
+                value={form.ecategoryId || ""}
+                onChange={(e) =>
+                  setForm({ ...form, ecategoryId: e.target.value })
+                }
+                style={{
+                  flex: 1,
+                  padding: 8,
+                  borderRadius: 4,
+                  border: "1px solid #ccc",
+                  marginTop: 4,
+                }}
+                required
+              >
+                <option value="">Select category</option>
+                {categories
+                  .filter((cat) => !cat.expcatisDeleted)
+                  .map((cat) => (
+                    <option key={cat._id} value={cat._id}>
+                      {cat.expcatname}
+                    </option>
+                  ))}
+              </select>
+
+              {/* Add new category */}
+              <button
+                type="button"
+                onClick={async () => {
+                  const { value: name } = await Swal.fire({
+                    title: "Add New Category",
+                    input: "text",
+                    inputPlaceholder: "Enter category name",
+                    showCancelButton: true,
+                    confirmButtonText: "Add",
+                  });
+                  if (!name) return;
+
+                  try {
+                    await axios.post(
+                      `${API_BASE}/expenseCategories`,
+                      { expcatname: name },
+                      { headers: { Authorization: token } }
+                    );
+                    Swal.fire(
+                      "Added!",
+                      "Category created successfully",
+                      "success"
+                    );
+                    fetchCategories();
+                  } catch (err) {
+                    Swal.fire(
+                      "Error",
+                      err.response?.data?.message || "Failed to add",
+                      "error"
+                    );
+                  }
+                }}
+                style={{
+                  padding: "8px 12px",
+                  borderRadius: 6,
+                  border: "1px solid #ddd",
+                  background: "#00bcd4",
+                  color: "#fff",
+                  cursor: "pointer",
+                }}
+              >
+                + New
+              </button>
+            </div>
+
+            {/* Admin-only delete/edit panel */}
+            {role === "admin" && (
+              <details style={{ marginTop: 10 }}>
+                <summary
+                  style={{
+                    cursor: "pointer",
+                    background: "#00bcd4", // ✅ cyan color
+                    color: "#fff",
+                    border: "none",
+                    padding: "10px 16px",
+                    borderRadius: 6,
+                    fontWeight: "bold",
+                    textAlign: "center",
+                    display: "flex",
+                    alignItems: "center", // ✅ vertically centers text
+                    justifyContent: "center", // ✅ horizontally centers text
+                  }}
+                >
+                  Manage Categories
+                </summary>
+
+                <div style={{ padding: 8 }}>
+                  {categories.map((cat) => (
+                    <div
+                      key={cat._id}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        borderBottom: "1px solid #eee",
+                        padding: "6px 0",
+                      }}
+                    >
+                      <span>{cat.expcatname}</span>
+
+                      <div>
+                        {/* Edit */}
+                        <button
+                          onClick={async () => {
+                            const { value: newName } = await Swal.fire({
+                              title: "Edit Category",
+                              input: "text",
+                              inputValue: cat.expcatname,
+                              showCancelButton: true,
+                            });
+                            if (!newName) return;
+                            try {
+                              await axios.put(
+                                `${API_BASE}/expenseCategories/${cat._id}`,
+                                { expcatname: newName },
+                                { headers: { Authorization: token } }
+                              );
+                              Swal.fire(
+                                "Updated!",
+                                "Category name updated",
+                                "success"
+                              );
+                              fetchCategories();
+                            } catch (err) {
+                              Swal.fire(
+                                "Error",
+                                err.response?.data?.message || "Failed",
+                                "error"
+                              );
+                            }
+                          }}
+                          style={{
+                            background: "#007bff",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 4,
+                            padding: "4px 10px",
+                            marginRight: 6,
+                            cursor: "pointer",
+                          }}
+                        >
+                          Edit
+                        </button>
+
+                        {/* Delete */}
+                        <button
+                          onClick={async () => {
+                            const confirm = await Swal.fire({
+                              title: `Delete "${cat.expcatname}"?`,
+                              icon: "warning",
+                              showCancelButton: true,
+                              confirmButtonText: "Yes, delete",
+                            });
+                            if (!confirm.isConfirmed) return;
+
+                            try {
+                              await axios.delete(
+                                `${API_BASE}/expenseCategories/${cat._id}`,
+                                { headers: { Authorization: token } }
+                              );
+                              Swal.fire(
+                                "Deleted!",
+                                "Category removed",
+                                "success"
+                              );
+                              fetchCategories();
+                            } catch (err) {
+                              Swal.fire(
+                                "Error",
+                                err.response?.data?.message || "Failed",
+                                "error"
+                              );
+                            }
+                          }}
+                          style={{
+                            background: "#dc3545",
+                            color: "#fff",
+                            border: "none",
+                            borderRadius: 4,
+                            padding: "4px 10px",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            )}
+          </div>
+
           <div style={{ marginBottom: 12 }}>
             <label>Name of cost</label>
             <input
               type="text"
               value={form.ename}
               onChange={(e) => setForm({ ...form, ename: e.target.value })}
-              style={{ width: "100%", padding: 8, marginTop: 4 }}
+              style={{
+                width: "100%",
+                padding: 8,
+                marginTop: 4,
+                borderRadius: 4,
+                border: "1px solid #ccc",
+              }}
               required
             />
           </div>
           <div style={{ marginBottom: 12 }}>
             <label>Amount</label>
-          <input
-  type="number"
-  min="1"
-  step="any"
-  value={form.eamount}
-  onChange={(e) => setForm({ ...form, eamount: e.target.value })}
-  style={{ width: "100%", padding: 8, marginTop: 4 }}
-  required
-  onInvalid={(e) => e.target.setCustomValidity("Value cannot be 0 or negative (-)")}
-  onInput={(e) => e.target.setCustomValidity("")}
-/>
-
+            <input
+              type="number"
+              min="1"
+              step="any"
+              value={form.eamount}
+              onChange={(e) => setForm({ ...form, eamount: e.target.value })}
+              style={{
+                width: "100%",
+                padding: 8,
+                marginTop: 4,
+                borderRadius: 4,
+                border: "1px solid #ccc",
+              }}
+              required
+              onInvalid={(e) =>
+                e.target.setCustomValidity("Value cannot be 0 or negative (-)")
+              }
+              onInput={(e) => e.target.setCustomValidity("")}
+            />
           </div>
+
           <div style={{ textAlign: "center", marginTop: 12 }}>
             <button
               type="submit"
@@ -278,8 +536,7 @@ function Expenses({ role }) {
                 onClick={cancelEdit}
                 style={{
                   background: "#d32f2f",
-
-                  color: "#f1ececff",
+                  color: "#fff",
                   padding: "10px 20px",
                   marginLeft: 10,
                   border: "none",
@@ -291,6 +548,7 @@ function Expenses({ role }) {
               </button>
             )}
           </div>
+
           {message && (
             <p
               style={{
@@ -304,10 +562,27 @@ function Expenses({ role }) {
             </p>
           )}
         </form>
-        {/* List only shows when viewAll is true */}
+        <hr
+          style={{
+            width: "90%",
+            border: "none",
+            borderTop: "2px solid #eee",
+            margin: "15px auto 25px",
+          }}
+        />
+
+        {/* ✅ Your Recent Expenses Section */}
         {viewAll && (
-          <div ref={viewRef}>
-            {/* ✅ Section Header */}
+          <div
+            ref={viewRef}
+            style={{
+              background: "#fafafa",
+              border: "1px solid #ddd",
+              borderRadius: "10px",
+              padding: "25px 30px",
+              textAlign: "left",
+            }}
+          >
             <h3
               style={{
                 textAlign: "center",
@@ -317,8 +592,16 @@ function Expenses({ role }) {
             >
               Your Recent Expenses
             </h3>
+            <hr
+              style={{
+                width: "100%",
+                border: "none",
+                borderTop: "2px solid #eee",
+                margin: "25px 0",
+              }}
+            />
 
-            {/* ✅ Filters Row */}
+            {/* Filters */}
             <div
               style={{
                 marginBottom: 10,
@@ -328,13 +611,39 @@ function Expenses({ role }) {
                 alignItems: "flex-end",
               }}
             >
-              <input
-                type="text"
-                placeholder="Search Name of cost..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ flex: 1, padding: 8 }}
-              />
+              {/* 🔍 Search input with icon */}
+              <div
+                style={{
+                  position: "relative",
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <span
+                  style={{
+                    position: "absolute",
+                    left: 10,
+                    color: "#888",
+                    fontSize: "1rem",
+                    pointerEvents: "none",
+                  }}
+                >
+                  🔍
+                </span>
+                <input
+                  type="text"
+                  placeholder="Search Name/ Category..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "8px 8px 8px 32px", // 👈 extra left padding for the icon
+                    borderRadius: 4,
+                    border: "1px solid #ccc",
+                  }}
+                />
+              </div>
 
               <div style={{ display: "flex", gap: "10px" }}>
                 <div>
@@ -358,7 +667,6 @@ function Expenses({ role }) {
               </div>
             </div>
 
-            {/* ✅ Export CSV button aligned right, above the table */}
             <div style={{ textAlign: "right", marginBottom: 20 }}>
               <button
                 onClick={exportToCSV}
@@ -394,6 +702,9 @@ function Expenses({ role }) {
                       Date
                     </th>
                     <th style={{ border: "1px solid #ddd", padding: 8 }}>
+                      Category
+                    </th>{" "}
+                    <th style={{ border: "1px solid #ddd", padding: 8 }}>
                       Name of Cost
                     </th>
                     <th style={{ border: "1px solid #ddd", padding: 8 }}>
@@ -416,11 +727,17 @@ function Expenses({ role }) {
                         {new Date(e.edate).toLocaleDateString()}
                       </td>
                       <td style={{ border: "1px solid #ddd", padding: 8 }}>
+                        {e.ecategoryId?.expcatname || "—"}{" "}
+                        {/* ✅ pulled via populate */}
+                      </td>
+
+                      <td style={{ border: "1px solid #ddd", padding: 8 }}>
                         {e.ename}
                       </td>
                       <td style={{ border: "1px solid #ddd", padding: 8 }}>
                         {e.eamount}
                       </td>
+
                       {role === "admin" && (
                         <td style={{ border: "1px solid #ddd", padding: 8 }}>
                           <button
@@ -458,10 +775,8 @@ function Expenses({ role }) {
               </table>
             )}
           </div>
-        )}{" "}
-        {/* ✅ closes viewAll condition */}
-      </div>{" "}
-      {/* ✅ closes the main white container */}
+        )}
+      </div>
     </PageWrapper>
   );
 }

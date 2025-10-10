@@ -25,7 +25,11 @@ router.post("/check", async (req, res) => {
         .json({ error: "Start and end dates are required" });
     }
 
-    const rooms = await Room.find();
+    // ✅ Include all needed fields for the calendar view
+    const rooms = await Room.find({}, "rid rname rcategory rprice").sort({
+      rcategory: 1,
+      rid: 1,
+    });
 
     // find bookings overlapping with requested dates
     const bookings = await Booking.find({
@@ -111,17 +115,21 @@ router.post("/book/:rid", auth(["manager", "admin"]), async (req, res) => {
     }
 
     const booking = new Booking({
-      rid: parseInt(rid),
-      cname,
-      ccontact,
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
-      advance: parseInt(advance) || 0,
-      advanceReceiver: advanceReceiver || "",
-      due: parseInt(due) || 0,
-      dueReceiver: dueReceiver || "",
-      isDeleted: false,
-    });
+  rid: parseInt(rid),
+  cname,
+  ccontact,
+  startDate: new Date(startDate),
+  endDate: new Date(endDate),
+  advance: parseInt(advance) || 0,
+  advanceReceiver: advanceReceiver || "",
+  due: parseInt(due) || 0,
+  dueReceiver: dueReceiver || "",
+  isDeleted: false,
+
+  // 🟢 Add this line to track creator
+  bcreatedByUid: req.user?._id || req.user?.uid || "system",
+});
+
     await booking.save();
 
     // update room status
