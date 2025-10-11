@@ -9,15 +9,17 @@ function Restaurant({ role }) {
 
   const [form, setForm] = useState({
     res_date: "",
-    res_amountSpent: "",
     res_amountEarned: "",
   });
   const [message, setMessage] = useState("");
   const [messageColor, setMessageColor] = useState("");
   const [restaurants, setRestaurants] = useState([]);
   const [viewAll, setViewAll] = useState(false);
+  // 🆕 Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const entriesPerPage = 10;
+
   const [editingId, setEditingId] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
   const [filterFrom, setFilterFrom] = useState("");
   const [filterTo, setFilterTo] = useState("");
   const [errors, setErrors] = useState({});
@@ -51,20 +53,21 @@ function Restaurant({ role }) {
     if (viewAll) fetchRestaurants();
     else setRestaurants([]);
   }, [viewAll]);
+  // 🆕 Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterFrom, filterTo]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage("");
     setErrors({}); // reset old errors
 
-    const spent = Number(form.res_amountSpent);
     const earned = Number(form.res_amountEarned);
     const newErrors = {};
 
     // Inline validations
     if (!form.res_date) newErrors.res_date = "Please select a valid date.";
-    if (!form.res_amountSpent || isNaN(spent) || spent <= 0)
-      newErrors.res_amountSpent = "Amount must be greater than 0.";
     if (!form.res_amountEarned || isNaN(earned) || earned <= 0)
       newErrors.res_amountEarned = "Amount must be greater than 0.";
 
@@ -128,7 +131,6 @@ function Restaurant({ role }) {
   const handleEdit = (r) => {
     setForm({
       res_date: r.res_date.split("T")[0],
-      res_amountSpent: r.res_amountSpent,
       res_amountEarned: r.res_amountEarned,
     });
     setEditingId(r._id);
@@ -146,16 +148,20 @@ function Restaurant({ role }) {
 
   // Filter restaurants
   const filteredRestaurants = restaurants.filter((r) => {
-    const searchMatch =
-      r.res_amountSpent.toString().includes(searchTerm) ||
-      r.res_amountEarned.toString().includes(searchTerm) ||
-      new Date(r.res_date).toLocaleDateString().includes(searchTerm);
-
     const date = new Date(r.res_date);
     const fromOK = filterFrom ? date >= new Date(filterFrom) : true;
     const toOK = filterTo ? date <= new Date(filterTo) : true;
-    return searchMatch && fromOK && toOK && !r.res_isDeleted;
+    return fromOK && toOK && !r.res_isDeleted;
   });
+  // 🆕 Pagination calculations
+  const indexOfLastEntry = currentPage * entriesPerPage;
+  const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
+  const currentEntries = filteredRestaurants.slice(
+    indexOfFirstEntry,
+    indexOfLastEntry
+  );
+
+  const totalPages = Math.ceil(filteredRestaurants.length / entriesPerPage);
 
   // CSV Export
   const exportToCSV = () => {
@@ -167,7 +173,6 @@ function Restaurant({ role }) {
     const rows = filteredRestaurants.map((r, i) => ({
       "#": i + 1,
       Date: new Date(r.res_date).toLocaleDateString(),
-      "Amount Spent ": r.res_amountSpent,
       "Amount Earned": r.res_amountEarned,
     }));
 
@@ -187,6 +192,19 @@ function Restaurant({ role }) {
 
   return (
     <PageWrapper>
+      {/* ✅ Title at top like Expense page */}
+      <h2
+        style={{
+          textAlign: "center",
+          color: "#0d47a1",
+          fontWeight: 700,
+          fontSize: "1.8rem",
+          marginBottom: "30px",
+        }}
+      >
+        Restaurant Management
+      </h2>
+      {/* ✅ White Card Wrapper (same as Expenses.jsx) */}
       <div
         style={{
           width: "100%",
@@ -195,21 +213,9 @@ function Restaurant({ role }) {
           borderRadius: "22px",
           padding: "45px 50px",
           boxShadow: "0 15px 45px rgba(0, 0, 0, 0.15)",
-          margin: "0 auto 40px",
+          margin: "80px auto",
         }}
       >
-        <h2
-          style={{
-            textAlign: "center",
-            color: "#0d47a1",
-            fontWeight: 700,
-            fontSize: "1.8rem",
-            marginBottom: "30px",
-          }}
-        >
-          Restaurant Management
-        </h2>
-
         {/* View All toggle */}
         <div style={{ textAlign: "center", marginBottom: 20 }}>
           <button
@@ -237,7 +243,7 @@ function Restaurant({ role }) {
           </button>
         </div>
 
-        {/* Form */}
+        {/* ✅ Restaurant Form */}
         <form
           ref={formRef}
           onSubmit={handleSubmit}
@@ -247,6 +253,7 @@ function Restaurant({ role }) {
             borderRadius: 8,
             border: "1px solid #ddd",
             marginBottom: 30,
+            scrollMarginTop: "120px",
           }}
         >
           <div style={{ marginBottom: 12 }}>
@@ -255,38 +262,26 @@ function Restaurant({ role }) {
               type="date"
               value={form.res_date}
               onChange={(e) => setForm({ ...form, res_date: e.target.value })}
-              style={{ width: "100%", padding: 8, marginTop: 4 }}
-              required
-            />
-          </div>
-          <div style={{ marginBottom: 12 }}>
-            <label>Total Amount Spent (tk)</label>
-            <input
-              type="number"
-              min="1"
-              value={form.res_amountSpent}
-              onChange={(e) =>
-                setForm({ ...form, res_amountSpent: e.target.value })
-              }
               style={{
                 width: "100%",
                 padding: 8,
                 marginTop: 4,
-                borderColor: errors.res_amountSpent ? "crimson" : "#ccc",
+                borderRadius: 4,
+                border: "1px solid #ccc",
               }}
               required
             />
-            {errors.res_amountSpent && (
+            {errors.res_date && (
               <p
                 style={{ color: "crimson", fontSize: "13px", marginTop: "4px" }}
               >
-                {errors.res_amountSpent}
+                {errors.res_date}
               </p>
             )}
           </div>
 
           <div style={{ marginBottom: 12 }}>
-            <label>Total Amount Earned (tk)</label>
+            <label>Amount Earned (৳)</label>
             <input
               type="number"
               min="1"
@@ -298,7 +293,10 @@ function Restaurant({ role }) {
                 width: "100%",
                 padding: 8,
                 marginTop: 4,
-                borderColor: errors.res_amountEarned ? "crimson" : "#ccc",
+                borderRadius: 4,
+                border: errors.res_amountEarned
+                  ? "1px solid crimson"
+                  : "1px solid #ccc",
               }}
               required
             />
@@ -357,18 +355,47 @@ function Restaurant({ role }) {
           )}
         </form>
 
-        {/* Filter dropdown */}
+        {/* ✅ Divider line same as Expense page */}
+        <hr
+          style={{
+            width: "90%",
+            border: "none",
+            borderTop: "2px solid #eee",
+            margin: "15px auto 25px",
+          }}
+        />
+
+        {/* ✅ Recent Entries Section */}
         {viewAll && (
-          <>
+          <div
+            ref={viewRef}
+            style={{
+              background: "#fafafa",
+              border: "1px solid #ddd",
+              borderRadius: "10px",
+              padding: "25px 30px",
+              textAlign: "left",
+            }}
+          >
             <h3
               style={{
                 textAlign: "center",
-                fontWeight: "700",
-                marginBottom: "15px",
+                marginBottom: 20,
+                fontWeight: 700,
               }}
             >
-              Recent Entries
+              Restaurant Records
             </h3>
+            <hr
+              style={{
+                width: "100%",
+                border: "none",
+                borderTop: "2px solid #eee",
+                margin: "25px 0",
+              }}
+            />
+
+            {/* Filters */}
             <div
               style={{
                 marginBottom: 10,
@@ -378,17 +405,9 @@ function Restaurant({ role }) {
                 alignItems: "flex-end",
               }}
             >
-              <input
-                type="text"
-                placeholder="Search by Amount or Date..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ flex: 1, padding: 8 }}
-              />
-
               <div style={{ display: "flex", gap: "10px" }}>
                 <div>
-                  <label style={{ fontSize: "0.9rem" }}>Entries From:</label>
+                  <label style={{ fontSize: "0.9rem" }}>Earnings From:</label>
                   <input
                     type="date"
                     value={filterFrom || ""}
@@ -397,7 +416,7 @@ function Restaurant({ role }) {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: "0.9rem" }}>Entries To:</label>
+                  <label style={{ fontSize: "0.9rem" }}>Earnings To:</label>
                   <input
                     type="date"
                     value={filterTo || ""}
@@ -407,34 +426,28 @@ function Restaurant({ role }) {
                 </div>
               </div>
             </div>
-          </>
-        )}
 
-        {/* List */}
-        {viewAll && (
-          <>
+            <div style={{ textAlign: "right", marginBottom: 20 }}>
+              <button
+                onClick={exportToCSV}
+                style={{
+                  background: "#0d47a1",
+                  color: "#fff",
+                  padding: "10px 24px",
+                  borderRadius: 6,
+                  border: "none",
+                  cursor: "pointer",
+                  fontWeight: "bold",
+                }}
+              >
+                Export CSV
+              </button>
+            </div>
+
             {filteredRestaurants.length === 0 ? (
               <p>No records found.</p>
             ) : (
-              <div ref={viewRef}>
-                {/* Export Button */}
-                <div style={{ textAlign: "right", marginBottom: 20 }}>
-                  <button
-                    onClick={exportToCSV}
-                    style={{
-                      background: "#0d47a1",
-                      color: "#fff",
-                      padding: "10px 24px",
-                      borderRadius: 6,
-                      border: "none",
-                      cursor: "pointer",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    Export CSV
-                  </button>
-                </div>
-
+              <div>
                 <table
                   style={{
                     width: "100%",
@@ -452,9 +465,6 @@ function Restaurant({ role }) {
                         Date
                       </th>
                       <th style={{ border: "1px solid #ddd", padding: 8 }}>
-                        Amount Spent (৳)
-                      </th>
-                      <th style={{ border: "1px solid #ddd", padding: 8 }}>
                         Amount Earned (৳)
                       </th>
                       {role === "admin" && (
@@ -465,16 +475,13 @@ function Restaurant({ role }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredRestaurants.map((r, i) => (
+                    {currentEntries.map((r, i) => (
                       <tr key={r._id}>
                         <td style={{ border: "1px solid #ddd", padding: 8 }}>
-                          {i + 1}
+                          {(currentPage - 1) * entriesPerPage + (i + 1)}
                         </td>
                         <td style={{ border: "1px solid #ddd", padding: 8 }}>
                           {new Date(r.res_date).toLocaleDateString()}
-                        </td>
-                        <td style={{ border: "1px solid #ddd", padding: 8 }}>
-                          {r.res_amountSpent}
                         </td>
                         <td style={{ border: "1px solid #ddd", padding: 8 }}>
                           {r.res_amountEarned}
@@ -514,11 +521,64 @@ function Restaurant({ role }) {
                     ))}
                   </tbody>
                 </table>
+
+                {/* 🆕 Pagination Controls */}
+                {filteredRestaurants.length > entriesPerPage && (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      marginTop: 20,
+                      gap: "10px",
+                    }}
+                  >
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                      disabled={currentPage === 1}
+                      style={{
+                        padding: "8px 16px",
+                        background: currentPage === 1 ? "#ccc" : "#0d47a1",
+                        color: "white",
+                        border: "none",
+                        borderRadius: 6,
+                        cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      ← Previous
+                    </button>
+
+                    <span style={{ fontWeight: "bold" }}>
+                      Page {currentPage} of {totalPages}
+                    </span>
+
+                    <button
+                      onClick={() =>
+                        setCurrentPage((p) => Math.min(p + 1, totalPages))
+                      }
+                      disabled={currentPage === totalPages}
+                      style={{
+                        padding: "8px 16px",
+                        background:
+                          currentPage === totalPages ? "#ccc" : "#0d47a1",
+                        color: "white",
+                        border: "none",
+                        borderRadius: 6,
+                        cursor:
+                          currentPage === totalPages
+                            ? "not-allowed"
+                            : "pointer",
+                      }}
+                    >
+                      Next →
+                    </button>
+                  </div>
+                )}
               </div>
             )}
-          </>
+          </div>
         )}
-      </div>
+      </div>{" "}
     </PageWrapper>
   );
 }
