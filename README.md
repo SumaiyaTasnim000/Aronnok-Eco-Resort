@@ -4,6 +4,8 @@ A MERN Stack Hotel Management System designed to streamline operations at eco-re
 Built with React.js, Node.js, Express, and MongoDB, it provides an end-to-end management dashboard with JWT-based authentication and role-based access control for Admins and Managers.
 
 🚀 Features
+
+
 🏠 Dashboard
 
 Interactive calendar view of room availability (booked ✅ / vacant ❌)
@@ -57,9 +59,10 @@ LocalStorage session management
 Restricted access for sensitive actions (only Admins can edit/delete)
 
 🧱 Tech Stack
-Category	         Technologies
-Frontend	         React.js, Axios, SweetAlert2, TailwindCSS
-Backend	           Node.js, Express.js
-Database	         MongoDB Atlas
-Authentication	   JWT (JSON Web Token)
-Tools	             Git, Git Bash, VS Code, Postman, Nodemon
+Category	         Technologies- 
+
+(Frontend:	         React.js, Axios, SweetAlert2, TailwindCSS)
+(Backend:	           Node.js, Express.js)
+(Database:	         MongoDB Atlas)
+(Authentication:	   JWT (JSON Web Token))
+(Tools:	             Git, Git Bash, VS Code, Postman, Nodemon)
