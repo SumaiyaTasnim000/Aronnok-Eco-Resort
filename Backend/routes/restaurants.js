@@ -6,14 +6,13 @@ const auth = require("../middleware/auth");
 // Create restaurant entry (Manager + Admin)
 router.post("/", auth(["manager", "admin"]), async (req, res) => {
   try {
-    const { res_date, res_amountSpent, res_amountEarned } = req.body;
-    if (!res_date || !res_amountSpent || !res_amountEarned) {
+    const { res_date, res_amountEarned } = req.body;
+    if (!res_date || !res_amountEarned) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
     const restaurant = new Restaurant({
       res_date,
-      res_amountSpent,
       res_amountEarned,
       res_createdByUid: req.user?.uid || null,
     });
@@ -38,12 +37,10 @@ router.get("/", auth(["manager", "admin"]), async (req, res) => {
     const restaurants = await Restaurant.find(query).sort({ res_date: -1 });
     res.json(restaurants);
   } catch (err) {
-    res
-      .status(500)
-      .json({
-        message: "Error fetching restaurant entries",
-        error: err.message,
-      });
+    res.status(500).json({
+      message: "Error fetching restaurant entries",
+      error: err.message,
+    });
   }
 });
 

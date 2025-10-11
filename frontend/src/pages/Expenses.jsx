@@ -14,6 +14,10 @@ function Expenses({ role }) {
 
   const [viewAll, setViewAll] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  // 🆕 Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const entriesPerPage = 10;
+
   // Categories state
   const [categories, setCategories] = useState([]);
 
@@ -54,6 +58,10 @@ function Expenses({ role }) {
     if (viewAll) fetchExpenses();
     else setExpenses([]);
   }, [viewAll]);
+  // 🆕 Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filterFrom, filterTo, searchTerm]);
 
   // 🆕 Trigger fetchCategories once when page loads
   useEffect(() => {
@@ -104,8 +112,8 @@ function Expenses({ role }) {
       text: "This expense will be marked as deleted.",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
+      confirmButtonColor: "#dc3545", // 🔴 Red
+      cancelButtonColor: "#3085d6", // 🔵 Blue
       confirmButtonText: "Yes, delete it!",
     });
 
@@ -164,6 +172,14 @@ function Expenses({ role }) {
 
     return matches && fromOK && toOK;
   });
+  // 🆕 Pagination calculations
+  const indexOfLastEntry = currentPage * entriesPerPage;
+  const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
+  const currentEntries = filteredExpenses.slice(
+    indexOfFirstEntry,
+    indexOfLastEntry
+  );
+  const totalPages = Math.ceil(filteredExpenses.length / entriesPerPage);
 
   const exportToCSV = () => {
     if (filteredExpenses.length === 0) {
@@ -207,7 +223,6 @@ function Expenses({ role }) {
       >
         Expense Management
       </h2>
-
       <div
         style={{
           width: "100%",
@@ -367,7 +382,7 @@ function Expenses({ role }) {
                     justifyContent: "center", // ✅ horizontally centers text
                   }}
                 >
-                  Manage Categories
+                  Manage Categories ▽
                 </summary>
 
                 <div style={{ padding: 8 }}>
@@ -435,6 +450,8 @@ function Expenses({ role }) {
                               title: `Delete "${cat.expcatname}"?`,
                               icon: "warning",
                               showCancelButton: true,
+                              confirmButtonColor: "#d32f2f", // 🔴 consistent red tone
+                              cancelButtonColor: "#3085d6",
                               confirmButtonText: "Yes, delete",
                             });
                             if (!confirm.isConfirmed) return;
@@ -459,13 +476,20 @@ function Expenses({ role }) {
                             }
                           }}
                           style={{
-                            background: "#dc3545",
+                            background: "#d32f2f", // 🔴 unified red
                             color: "#fff",
                             border: "none",
                             borderRadius: 4,
                             padding: "4px 10px",
                             cursor: "pointer",
+                            transition: "background 0.3s",
                           }}
+                          onMouseOver={(e) =>
+                            (e.target.style.background = "#b71c1c")
+                          }
+                          onMouseOut={(e) =>
+                            (e.target.style.background = "#d32f2f")
+                          }
                         >
                           Delete
                         </button>
@@ -494,7 +518,7 @@ function Expenses({ role }) {
             />
           </div>
           <div style={{ marginBottom: 12 }}>
-            <label>Amount</label>
+            <label>Amount (৳)</label>
             <input
               type="number"
               min="1"
@@ -536,7 +560,7 @@ function Expenses({ role }) {
                 onClick={cancelEdit}
                 style={{
                   background: "#d32f2f",
-                  color: "#fff",
+                  color: "#2b3f7aff",
                   padding: "10px 20px",
                   marginLeft: 10,
                   border: "none",
@@ -590,7 +614,7 @@ function Expenses({ role }) {
                 fontWeight: 700,
               }}
             >
-              Your Recent Expenses
+              Expense Records
             </h3>
             <hr
               style={{
@@ -687,96 +711,152 @@ function Expenses({ role }) {
             {filteredExpenses.length === 0 ? (
               <p>No expenses found.</p>
             ) : (
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  border: "1px solid #ddd",
-                  marginTop: 20,
-                }}
-              >
-                <thead>
-                  <tr style={{ background: "#f2f2f2" }}>
-                    <th style={{ border: "1px solid #ddd", padding: 8 }}>#</th>
-                    <th style={{ border: "1px solid #ddd", padding: 8 }}>
-                      Date
-                    </th>
-                    <th style={{ border: "1px solid #ddd", padding: 8 }}>
-                      Category
-                    </th>{" "}
-                    <th style={{ border: "1px solid #ddd", padding: 8 }}>
-                      Name of Cost
-                    </th>
-                    <th style={{ border: "1px solid #ddd", padding: 8 }}>
-                      Amount (৳)
-                    </th>
-                    {role === "admin" && (
+              <>
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    border: "1px solid #ddd",
+                    marginTop: 20,
+                  }}
+                >
+                  <thead>
+                    <tr style={{ background: "#f2f2f2" }}>
                       <th style={{ border: "1px solid #ddd", padding: 8 }}>
-                        Actions
+                        #
                       </th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredExpenses.map((e, i) => (
-                    <tr key={e._id}>
-                      <td style={{ border: "1px solid #ddd", padding: 8 }}>
-                        {i + 1}
-                      </td>
-                      <td style={{ border: "1px solid #ddd", padding: 8 }}>
-                        {new Date(e.edate).toLocaleDateString()}
-                      </td>
-                      <td style={{ border: "1px solid #ddd", padding: 8 }}>
-                        {e.ecategoryId?.expcatname || "—"}{" "}
-                        {/* ✅ pulled via populate */}
-                      </td>
-
-                      <td style={{ border: "1px solid #ddd", padding: 8 }}>
-                        {e.ename}
-                      </td>
-                      <td style={{ border: "1px solid #ddd", padding: 8 }}>
-                        {e.eamount}
-                      </td>
-
+                      <th style={{ border: "1px solid #ddd", padding: 8 }}>
+                        Date
+                      </th>
+                      <th style={{ border: "1px solid #ddd", padding: 8 }}>
+                        Category
+                      </th>
+                      <th style={{ border: "1px solid #ddd", padding: 8 }}>
+                        Name of Cost
+                      </th>
+                      <th style={{ border: "1px solid #ddd", padding: 8 }}>
+                        Amount (৳)
+                      </th>
                       {role === "admin" && (
-                        <td style={{ border: "1px solid #ddd", padding: 8 }}>
-                          <button
-                            onClick={() => handleEdit(e)}
-                            style={{
-                              background: "#007bff",
-                              color: "#fff",
-                              padding: "6px 12px",
-                              border: "none",
-                              borderRadius: 4,
-                              marginRight: 8,
-                              cursor: "pointer",
-                            }}
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() => handleDelete(e._id)}
-                            style={{
-                              background: "#dc3545",
-                              color: "#fff",
-                              padding: "6px 12px",
-                              border: "none",
-                              borderRadius: 4,
-                              cursor: "pointer",
-                            }}
-                          >
-                            Delete
-                          </button>
-                        </td>
+                        <th style={{ border: "1px solid #ddd", padding: 8 }}>
+                          Actions
+                        </th>
                       )}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {currentEntries.map((e, i) => (
+                      <tr key={e._id}>
+                        <td style={{ border: "1px solid #ddd", padding: 8 }}>
+                          {(currentPage - 1) * entriesPerPage + (i + 1)}
+                        </td>
+                        <td style={{ border: "1px solid #ddd", padding: 8 }}>
+                          {new Date(e.edate).toLocaleDateString()}
+                        </td>
+                        <td style={{ border: "1px solid #ddd", padding: 8 }}>
+                          {e.ecategoryId?.expcatname || "—"}
+                        </td>
+                        <td style={{ border: "1px solid #ddd", padding: 8 }}>
+                          {e.ename}
+                        </td>
+                        <td style={{ border: "1px solid #ddd", padding: 8 }}>
+                          {e.eamount}
+                        </td>
+
+                        {role === "admin" && (
+                          <td style={{ border: "1px solid #ddd", padding: 8 }}>
+                            <button
+                              onClick={() => handleEdit(e)}
+                              style={{
+                                background: "#007bff",
+                                color: "#fff",
+                                padding: "6px 12px",
+                                border: "none",
+                                borderRadius: 4,
+                                marginRight: 8,
+                                cursor: "pointer",
+                              }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDelete(e._id)}
+                              style={{
+                                background: "#dc3545",
+                                color: "#fff",
+                                padding: "6px 12px",
+                                border: "none",
+                                borderRadius: 4,
+                                cursor: "pointer",
+                              }}
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                {/* 🆕 Pagination Controls */}
+                {filteredExpenses.length > entriesPerPage && (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      marginTop: 20,
+                      gap: "10px",
+                    }}
+                  >
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                      disabled={currentPage === 1}
+                      style={{
+                        padding: "8px 16px",
+                        background: currentPage === 1 ? "#ccc" : "#0d47a1",
+                        color: "white",
+                        border: "none",
+                        borderRadius: 6,
+                        cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      ← Previous
+                    </button>
+
+                    <span style={{ fontWeight: "bold" }}>
+                      Page {currentPage} of {totalPages}
+                    </span>
+
+                    <button
+                      onClick={() =>
+                        setCurrentPage((p) => Math.min(p + 1, totalPages))
+                      }
+                      disabled={currentPage === totalPages}
+                      style={{
+                        padding: "8px 16px",
+                        background:
+                          currentPage === totalPages ? "#ccc" : "#0d47a1",
+                        color: "white",
+                        border: "none",
+                        borderRadius: 6,
+                        cursor:
+                          currentPage === totalPages
+                            ? "not-allowed"
+                            : "pointer",
+                      }}
+                    >
+                      Next →
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
-      </div>
+      </div>{" "}
+      {/* closes main white card container */}
     </PageWrapper>
   );
 }

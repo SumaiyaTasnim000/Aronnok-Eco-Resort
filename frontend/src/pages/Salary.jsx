@@ -100,10 +100,16 @@ function Salary({ role }) {
   }, [editingId]);
 
   // ---------------- Derived lists ----------------
+  // ✅ For Staff Dropdown in form (still from staffs)
   const uniqueStaffNames = useMemo(
     () => [...new Set(staffs.map((s) => s.sname))],
     [staffs]
   );
+
+  // ✅ For Filter dropdown (based on actual salary records)
+  const uniqueSalaryNames = useMemo(() => {
+    return [...new Set(salaries.map((s) => s.staff?.sname).filter(Boolean))];
+  }, [salaries]);
 
   const uniqueStaffTypes = useMemo(
     () => [...new Set(staffs.map((s) => s.stype))],
@@ -132,52 +138,49 @@ function Salary({ role }) {
 
   // ---------------- Handlers: Staff Add/Delete ----------------
   // ✅ Add staff locally only (not saved to DB yet)
-  const handleAddStaffPrompt = async (prefillType = "") => {
+  const handleAddStaffPrompt = async () => {
     const { value: result } = await Swal.fire({
       title: "Add New Staff",
       html: `
       <input id="swal-sname" class="swal2-input" placeholder="Staff Name (letters and spaces only)" />
-      <input id="swal-stype" class="swal2-input" placeholder="Staff Type (e.g., Manager, Chef)" value="${prefillType}" />
+      <input id="swal-stype" class="swal2-input" placeholder="Staff Type (e.g., Manager, Chef)" />
+      <input id="swal-smonthly" type="number" class="swal2-input" placeholder="Monthly Salary (৳)" min="1" />
     `,
       focusConfirm: false,
       showCancelButton: true,
+      confirmButtonColor: "#00bcd4",
+      cancelButtonColor: "#d33", // 🔴 red cancel
+      confirmButtonText: "Save",
+      cancelButtonText: "Cancel",
       preConfirm: () => {
         const sname = document.getElementById("swal-sname").value.trim();
         const stype = document.getElementById("swal-stype").value.trim();
-        if (!/^[a-zA-Z\\s]+$/.test(sname)) {
-          Swal.showValidationMessage(
-            "Staff Name must contain letters/spaces only"
+        const smonthly = Number(document.getElementById("swal-smonthly").value);
+        if (!/^[a-zA-Z\\s]+$/.test(sname))
+          return Swal.showValidationMessage(
+            "Staff name must contain letters/spaces only"
           );
-          return false;
-        }
-        if (!stype) {
-          Swal.showValidationMessage("Staff Type is required");
-          return false;
-        }
-        return { sname, stype };
+        if (!stype) return Swal.showValidationMessage("Staff type is required");
+        if (!smonthly || smonthly <= 0)
+          return Swal.showValidationMessage("Monthly salary must be positive");
+        return { sname, stype, smonthly };
       },
     });
 
     if (!result) return;
 
-    // ✅ Add locally
-    const exists = staffs.find(
-      (s) => s.sname.toLowerCase() === result.sname.toLowerCase()
-    );
-    if (!exists) {
-      setStaffs((prev) => [
-        ...prev,
-        {
-          sname: result.sname,
-          stype: result.stype,
-          smonthly: null,
-          temp: true,
-        },
-      ]);
+    try {
+      const res = await axios.post(`${API_BASE}/staffs`, result, axiosAuth);
+      setStaffs((prev) => [res.data.staff, ...prev]);
+      Swal.fire("Added!", "New staff saved successfully", "success");
+      fetchStaffs();
+    } catch (err) {
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Failed to add staff",
+        "error"
+      );
     }
-
-    setForm((f) => ({ ...f, sname: result.sname, stype: result.stype }));
-    Swal.fire("New Staff Added!");
   };
 
   const handleDeleteStaff = async (staff) => {
@@ -342,20 +345,24 @@ function Salary({ role }) {
 
         setMessage(res.data.message || "Salary saved successfully");
         setMessageColor("green");
-        setTimeout(() => window.location.reload(), 800);
-      }
 
-      setForm({
-        sname: "",
-        stype: "",
-        spaidFrom: "",
-        spaidUntil: "",
-        smonthly: "",
-        spaidDays: "",
-        spaidSalary: "",
-      });
-      setEditingId(null);
-      if (viewAll) fetchSalaries();
+        // ✅ Reset form and refetch salaries without reloading
+        setForm({
+          sname: "",
+          stype: "",
+          spaidFrom: "",
+          spaidUntil: "",
+          smonthly: "",
+          spaidDays: "",
+          spaidSalary: "",
+        });
+        setEditingId(null);
+
+        // ✅ Keep "View All" open and refresh table
+        if (viewAll) {
+          fetchSalaries();
+        }
+      }
     } catch (err) {
       setMessage("Error saving salary");
       setMessageColor("crimson");
@@ -436,12 +443,24 @@ function Salary({ role }) {
     }
     return data;
   }, [salaries, filterStaffName, filterFrom, filterUntil]);
+  // 🆕 Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const entriesPerPage = 10;
+
+  const indexOfLastEntry = currentPage * entriesPerPage;
+  const indexOfFirstEntry = indexOfLastEntry - entriesPerPage;
+  const currentEntries = filteredSalaries.slice(
+    indexOfFirstEntry,
+    indexOfLastEntry
+  );
+  const totalPages = Math.ceil(filteredSalaries.length / entriesPerPage);
 
   // ---------------- UI ----------------
   if (role !== "admin") {
     return (
-      <div style={{ padding: 24, color: "crimson" }}>
-        You do not have access to this page.
+      <div style={{ padding: 24, color: "crimson", textAlign: "center" }}>
+        You do not have access to this page. Please click on other pages from
+        navigation.
       </div>
     );
   }
@@ -580,43 +599,30 @@ function Salary({ role }) {
                 ))}
               </select>
             </div>
-
-            {/* Add Type via new Staff entry */}
-            <button
-              type="button"
-              onClick={() => handleAddStaffPrompt(form.stype || "")}
-              title="Add a new type (creates a staff with that type)"
-              style={{
-                marginTop: 22,
-                padding: "8px 12px",
-                borderRadius: 6,
-                border: "1px solid #ddd",
-                cursor: "pointer",
-                background: "#00bcd4",
-                color: "#fff",
-              }}
-            >
-              + Add
-            </button>
           </div>
 
-          {/* Manage Staff (list + delete) */}
+          {/* 🆕 Manage Staff Section (collapsible dropdown) */}
           <div style={{ marginBottom: 12 }}>
             <details>
               <summary
                 style={{
                   cursor: "pointer",
-                  border: "1px solid #ccc",
-                  borderRadius: "6px",
-                  padding: "8px 10px",
-                  background: "#bd6868ff",
+                  background: "#00bcd4", // cyan color
+                  color: "#fff",
+                  border: "none",
+                  padding: "10px 16px",
+                  borderRadius: 6,
                   fontWeight: "bold",
-                  textAlign: "center", // ✅ centers the text
+                  textAlign: "center",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                Delete Staffs
+                Manage Staffs ▽
               </summary>
-              <div style={{ paddingTop: 10 }}>
+
+              <div style={{ padding: "10px 8px" }}>
                 {staffs.length === 0 ? (
                   <p style={{ color: "#666" }}>No staff yet.</p>
                 ) : (
@@ -637,21 +643,93 @@ function Salary({ role }) {
                           <strong>{st.sname}</strong>{" "}
                           <span style={{ color: "#666" }}>({st.stype})</span>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteStaff(st)}
-                          style={{
-                            padding: "4px 10px",
-                            borderRadius: 4,
-                            border: "none",
-                            background: "#ffeaea",
-                            color: "#d33",
-                            cursor: "pointer",
-                          }}
-                          title="Soft delete"
-                        >
-                          − Delete
-                        </button>
+
+                        <div>
+                          {/* ✅ Edit button */}
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const { value: newData } = await Swal.fire({
+                                title: "Edit Staff",
+                                html: `
+                        <input id="swal-edit-sname" class="swal2-input" value="${
+                          st.sname
+                        }" placeholder="Staff Name" />
+                        <input id="swal-edit-stype" class="swal2-input" value="${
+                          st.stype
+                        }" placeholder="Staff Type" />
+                        <input id="swal-edit-smonthly" type="number" class="swal2-input" value="${
+                          st.smonthly || ""
+                        }" placeholder="Monthly Salary (৳)" min="1" />
+                      `,
+                                showCancelButton: true,
+                                confirmButtonText: "Update",
+                                cancelButtonColor: "#d33",
+                                preConfirm: () => ({
+                                  sname:
+                                    document.getElementById("swal-edit-sname")
+                                      .value,
+                                  stype:
+                                    document.getElementById("swal-edit-stype")
+                                      .value,
+                                  smonthly: Number(
+                                    document.getElementById(
+                                      "swal-edit-smonthly"
+                                    ).value
+                                  ),
+                                }),
+                              });
+                              if (!newData) return;
+                              try {
+                                await axios.put(
+                                  `${API_BASE}/staffs/${st._id}`,
+                                  newData,
+                                  axiosAuth
+                                );
+                                Swal.fire(
+                                  "Updated!",
+                                  "Staff info updated.",
+                                  "success"
+                                );
+                                fetchStaffs();
+                              } catch (err) {
+                                Swal.fire(
+                                  "Error",
+                                  err.response?.data?.message ||
+                                    "Failed to update",
+                                  "error"
+                                );
+                              }
+                            }}
+                            style={{
+                              background: "#007bff",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: 4,
+                              padding: "4px 10px",
+                              marginRight: 6,
+                              cursor: "pointer",
+                            }}
+                          >
+                            Edit
+                          </button>
+
+                          {/* ✅ Delete button */}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteStaff(st)}
+                            style={{
+                              padding: "4px 10px",
+                              borderRadius: 4,
+                              border: "none",
+                              background: "#dc3545",
+                              color: "#fff",
+                              cursor: "pointer",
+                            }}
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -660,7 +738,6 @@ function Salary({ role }) {
             </details>
           </div>
 
-          {/* Dates */}
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
             <div style={{ flex: 1, minWidth: 220 }}>
               <label>Paid From</label>
@@ -699,18 +776,34 @@ function Salary({ role }) {
           >
             <div style={{ flex: 1, minWidth: 220 }}>
               <label>Monthly Salary (৳)</label>
-              {/* Monthly Salary */}
               <input
                 type="number"
                 min="1"
                 value={form.smonthly}
                 onChange={(e) => {
-                  const val = e.target.value;
-                  setForm({ ...form, smonthly: e.target.value });
+                  // Prevent editing if currently updating an existing record
+                  if (!editingId) {
+                    setForm({ ...form, smonthly: e.target.value });
+                  }
                 }}
-                style={{ width: "100%", padding: 8, marginTop: 4 }}
+                readOnly={!!editingId} // ✅ lock field when editing existing salary
+                style={{
+                  width: "100%",
+                  padding: 8,
+                  marginTop: 4,
+                  background: editingId ? "#f5f5f5" : "white",
+                  cursor: editingId ? "not-allowed" : "text",
+                  color: "#000",
+                }}
                 required
               />
+              {editingId && (
+                <small
+                  style={{ color: "#d32f2f", display: "block", marginTop: 4 }}
+                >
+                  To edit salary, go to <b>Manage Staffs → Edit</b>.
+                </small>
+              )}
             </div>
             <div style={{ flex: 1, minWidth: 220 }}>
               <label>Paid For (Days)</label>
@@ -821,14 +914,14 @@ function Salary({ role }) {
               }}
             >
               <div>
-                <label>Filter by Staff</label>
+                <label>Filter by Name</label>
                 <select
                   value={filterStaffName}
                   onChange={(e) => setFilterStaffName(e.target.value)}
                   style={{ padding: 8, marginLeft: 8 }}
                 >
                   <option value="">All Staff</option>
-                  {uniqueStaffNames.map((n) => (
+                  {uniqueSalaryNames.map((n) => (
                     <option key={n} value={n}>
                       {n}
                     </option>
@@ -945,7 +1038,7 @@ function Salary({ role }) {
                       </td>
                     </tr>
                   ) : (
-                    filteredSalaries.map((s, idx) => (
+                    currentEntries.map((s, idx) => (
                       <tr
                         key={s._id}
                         style={{ borderBottom: "1px solid #eee" }}
@@ -996,6 +1089,55 @@ function Salary({ role }) {
                   )}
                 </tbody>
               </table>
+              {filteredSalaries.length > entriesPerPage && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    marginTop: 20,
+                    gap: "10px",
+                  }}
+                >
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                    disabled={currentPage === 1}
+                    style={{
+                      padding: "8px 16px",
+                      background: currentPage === 1 ? "#ccc" : "#0d47a1",
+                      color: "white",
+                      border: "none",
+                      borderRadius: 6,
+                      cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    ← Previous
+                  </button>
+
+                  <span style={{ fontWeight: "bold" }}>
+                    Page {currentPage} of {totalPages}
+                  </span>
+
+                  <button
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(p + 1, totalPages))
+                    }
+                    disabled={currentPage === totalPages}
+                    style={{
+                      padding: "8px 16px",
+                      background:
+                        currentPage === totalPages ? "#ccc" : "#0d47a1",
+                      color: "white",
+                      border: "none",
+                      borderRadius: 6,
+                      cursor:
+                        currentPage === totalPages ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    Next →
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
