@@ -14,19 +14,25 @@ function Dashboard() {
   const [bookings, setBookings] = useState([]);
   const [visibleDates, setVisibleDates] = useState([]);
 
-  // Generate initial week range (today ±3 days)
-  const generateInitialWeek = () => {
-    const today = new Date();
-    const start = new Date(today);
-    start.setDate(today.getDate() - 3);
-    const end = new Date(today);
-    end.setDate(today.getDate() + 3);
+  // ✅ Generate a full week (Monday–Sunday) from any selected date
+  const generateWeekFromDate = (selectedDate) => {
+    const selected = new Date(selectedDate);
+    const day = selected.getDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    const startOfWeek = new Date(selected);
+    startOfWeek.setDate(selected.getDate() + diffToMonday);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-    const dates = [];
-    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      dates.push(new Date(d));
+    const newDates = [];
+    for (
+      let d = new Date(startOfWeek);
+      d <= endOfWeek;
+      d.setDate(d.getDate() + 1)
+    ) {
+      newDates.push(new Date(d));
     }
-    setVisibleDates(dates);
+    setVisibleDates(newDates);
   };
 
   // Fetch all rooms and bookings on mount
@@ -41,6 +47,20 @@ function Dashboard() {
     } catch (err) {
       console.error("Error loading dashboard:", err);
     }
+  };
+  // ✅ Generate default week range (today ±3 days)
+  const generateInitialWeek = () => {
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(today.getDate() - 3);
+    const end = new Date(today);
+    end.setDate(today.getDate() + 3);
+
+    const dates = [];
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      dates.push(new Date(d));
+    }
+    setVisibleDates(dates);
   };
 
   // Initialize when page loads
@@ -95,21 +115,75 @@ function Dashboard() {
         Aronnok Eco Resort Dashboard
       </h1>
 
-      {/* Week navigation */}
+      {/* 🌿 Date Filter + Week Navigation Row */}
       <div
         style={{
           display: "flex",
-          justifyContent: "flex-end",
-          gap: "8px",
-          marginBottom: "15px",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: "20px",
+          marginBottom: "25px",
+          flexWrap: "wrap",
         }}
       >
-        <button onClick={() => shiftWeek("prev")} style={navBtn}>
-          ← Previous Week
-        </button>
-        <button onClick={() => shiftWeek("next")} style={navBtn}>
-          Next Week →
-        </button>
+        <label style={{ fontWeight: 600, color: "#0d47a1" }}>
+          Select Week Starting From:{" "}
+          <input
+            type="date"
+            onChange={(e) => generateWeekFromDate(e.target.value)}
+            style={{
+              padding: "8px 12px",
+              borderRadius: "8px",
+              border: "2px solid #1976d2",
+              background: "#e3f2fd",
+              color: "#0d47a1",
+              fontWeight: 600,
+              fontSize: "15px",
+              cursor: "pointer",
+              outline: "none",
+              transition: "all 0.2s ease",
+            }}
+            onFocus={(e) => (e.target.style.background = "#bbdefb")}
+            onBlur={(e) => (e.target.style.background = "#e3f2fd")}
+          />
+        </label>
+
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button
+            onClick={() => shiftWeek("prev")}
+            style={{
+              background: "#1976d2",
+              color: "white",
+              padding: "8px 14px",
+              borderRadius: "8px",
+              border: "none",
+              cursor: "pointer",
+              fontWeight: "600",
+              transition: "background 0.2s ease",
+            }}
+            onMouseEnter={(e) => (e.target.style.background = "#1565c0")}
+            onMouseLeave={(e) => (e.target.style.background = "#1976d2")}
+          >
+            ← Previous Week
+          </button>
+          <button
+            onClick={() => shiftWeek("next")}
+            style={{
+              background: "#1976d2",
+              color: "white",
+              padding: "8px 14px",
+              borderRadius: "8px",
+              border: "none",
+              cursor: "pointer",
+              fontWeight: "600",
+              transition: "background 0.2s ease",
+            }}
+            onMouseEnter={(e) => (e.target.style.background = "#1565c0")}
+            onMouseLeave={(e) => (e.target.style.background = "#1976d2")}
+          >
+            Next Week →
+          </button>
+        </div>
       </div>
 
       {/* Calendar Table */}
@@ -155,7 +229,7 @@ function Dashboard() {
                       onClick={() => handleCellClick(room, date)}
                       style={{
                         ...td,
-                        background: booked ? "#e53935" : "#43a047",
+                        background: booked ? "#ad5d56" : "#5c9e76",
                         cursor: "pointer",
                         height: "35px",
                       }}
@@ -181,10 +255,10 @@ function Dashboard() {
         }}
       >
         <span>
-          <span style={legendBox("#e53935")}></span> Booked
+          <span style={legendBox("#ad5d56")}></span> Booked
         </span>
         <span>
-          <span style={legendBox("#43a047")}></span> Available
+          <span style={legendBox("#5c9e76")}></span> Available
         </span>
       </div>
     </PageWrapper>

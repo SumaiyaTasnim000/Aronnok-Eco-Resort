@@ -221,7 +221,7 @@ function Expenses({ role }) {
           marginBottom: "30px",
         }}
       >
-        Expense Management
+        🧾 Expense Management
       </h2>
       <div
         style={{

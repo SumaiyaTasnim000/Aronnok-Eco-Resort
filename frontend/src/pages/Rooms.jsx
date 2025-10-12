@@ -306,7 +306,7 @@ function Rooms({ role }) {
           marginBottom: "30px",
         }}
       >
-        Room Booking
+        🛌 Room Booking
       </h2>
 
       {/* Date selection */}
@@ -387,19 +387,20 @@ function Rooms({ role }) {
       <div>
         {availableRooms.map((room) => (
           <div
-            id={`room-${room.rid}`} // ✅ added for scroll & highlight
+            id={`room-${room.rid}`}
             key={room.rid}
             style={{
               width: 760,
               margin: "12px auto",
-              padding: 16,
+              padding: "16px 24px", // 🆕 wider inner padding (left + right)
               border: "2px solid #020202ff",
               borderRadius: 8,
               background: "#fff",
               textAlign: "left",
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "center",
+              alignItems: "flex-start", // 🆕 so tall forms align at top, not middle
+              gap: "20px", // 🆕 space between left info & right form/details
             }}
           >
             <div>
@@ -459,7 +460,10 @@ function Rooms({ role }) {
                     marginTop: 12,
                     display: "flex",
                     flexDirection: "column",
-                    gap: 8,
+                    gap: 10,
+                    paddingRight: "10px",
+                    width: "320px", // 🆕 keeps all fields uniform
+                    alignItems: "center", // 🆕 centers everything under the banner
                   }}
                 >
                   {/* Selected Date Range Display */}
@@ -473,6 +477,7 @@ function Rooms({ role }) {
                       fontWeight: "600",
                       fontSize: "14px",
                       textAlign: "center",
+                      width: "100%", // ✅ same width as inputs
                     }}
                   >
                     Room booking from{" "}
@@ -494,7 +499,8 @@ function Rooms({ role }) {
                     }
                     required
                     style={{
-                      width: "100%",
+                      width: "100%", // ✅ keep
+                      maxWidth: "320px", // 🆕 same as form
                       padding: 8,
                       border: "1px solid #ccc",
                       borderRadius: "6px",
@@ -502,14 +508,25 @@ function Rooms({ role }) {
                   />
 
                   {/* Contact field with +880 */}
-                  <div style={{ display: "flex", alignItems: "center" }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      width: "100%",
+                      maxWidth: "320px", // 🟢 match all input widths
+                      border: "1px solid #ccc",
+                      borderRadius: "6px",
+                      overflow: "hidden", // 🟢 keeps edges neat
+                      background: "#fff",
+                    }}
+                  >
                     <span
                       style={{
                         background: "#eee",
                         padding: "8px 10px",
-                        border: "1px solid #ccc",
-                        borderRadius: "6px 0 0 6px",
                         fontWeight: "bold",
+                        borderRight: "1px solid #ccc",
+                        flexShrink: 0,
                       }}
                     >
                       +880
@@ -535,9 +552,9 @@ function Rooms({ role }) {
                       onInput={(e) => e.target.setCustomValidity("")}
                       style={{
                         flex: 1,
-                        padding: 8,
-                        border: "1px solid #ccc",
-                        borderRadius: "0 6px 6px 0",
+                        padding: "8px 10px",
+                        border: "none",
+                        outline: "none",
                       }}
                     />
                   </div>
@@ -553,7 +570,8 @@ function Rooms({ role }) {
                       setFormData({ ...formData, advance: e.target.value })
                     }
                     style={{
-                      width: "100%",
+                      width: "100%", // ✅ keep
+                      maxWidth: "320px", // 🆕 same as form
                       padding: 8,
                       border: "1px solid #ccc",
                       borderRadius: "6px",
@@ -578,7 +596,8 @@ function Rooms({ role }) {
                       })
                     }
                     style={{
-                      width: "100%",
+                      width: "100%", // ✅ keep
+                      maxWidth: "320px", // 🆕 same as form
                       padding: 8,
                       border: "1px solid #ccc",
                       borderRadius: "6px",
@@ -597,7 +616,8 @@ function Rooms({ role }) {
                       setFormData({ ...formData, due: e.target.value })
                     }
                     style={{
-                      width: "100%",
+                      width: "100%", // ✅ keep
+                      maxWidth: "320px", // 🆕 same as form
                       padding: 8,
                       border: "1px solid #ccc",
                       borderRadius: "6px",
@@ -619,7 +639,8 @@ function Rooms({ role }) {
                       setFormData({ ...formData, dueReceiver: e.target.value })
                     }
                     style={{
-                      width: "100%",
+                      width: "100%", // ✅ keep
+                      maxWidth: "320px", // 🆕 same as form
                       padding: 8,
                       border: "1px solid #ccc",
                       borderRadius: "6px",
