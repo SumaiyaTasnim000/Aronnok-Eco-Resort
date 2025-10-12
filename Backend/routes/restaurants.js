@@ -30,10 +30,8 @@ router.post("/", auth(["manager", "admin"]), async (req, res) => {
 // Get entries (Manager sees only their entries, Admin sees all)
 router.get("/", auth(["manager", "admin"]), async (req, res) => {
   try {
-    const query =
-      req.user.urole === "manager"
-        ? { res_createdByUid: req.user.uid, res_isDeleted: false }
-        : { res_isDeleted: false };
+    const query = { res_isDeleted: false };
+
     const restaurants = await Restaurant.find(query).sort({ res_date: -1 });
     res.json(restaurants);
   } catch (err) {

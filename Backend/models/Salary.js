@@ -10,7 +10,7 @@ const salarySchema = new mongoose.Schema(
     }, // ✅ normalized link
     spaidFrom: { type: Date, required: true },
     spaidUntil: { type: Date, required: true },
-    spaidDays: { type: Number, required: true, min: 1 }, 
+    spaidDays: { type: Number, required: true, min: 1 },
     spaidSalary: { type: Number, required: true, min: 0 },
     sisDeleted: { type: Boolean, default: false },
   },

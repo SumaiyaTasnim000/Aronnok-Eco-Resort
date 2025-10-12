@@ -140,7 +140,7 @@ function Salary({ role }) {
   // ✅ Add staff locally only (not saved to DB yet)
   const handleAddStaffPrompt = async () => {
     const { value: result } = await Swal.fire({
-      title: "Add New Staff",
+      title: "👤 Add New Staff",
       html: `
       <input id="swal-sname" class="swal2-input" placeholder="Staff Name (letters and spaces only)" />
       <input id="swal-stype" class="swal2-input" placeholder="Staff Type (e.g., Manager, Chef)" />
@@ -476,7 +476,7 @@ function Salary({ role }) {
           marginBottom: "30px",
         }}
       >
-        Salary Management
+        💸 Salary Management
       </h2>
       <div
         style={{

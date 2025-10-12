@@ -287,12 +287,24 @@ function CalendarView() {
                           <td
                             key={i}
                             onClick={() => handleCellClick(room, date)}
+                            onMouseEnter={(e) => {
+                              // Store the original background so we can revert precisely
+                              e.target.dataset.originalColor =
+                                e.target.style.backgroundColor;
+                              e.target.style.backgroundColor = booked
+                                ? "#e57373"
+                                : "#8cc7a6"; // darker shade
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.backgroundColor =
+                                e.target.dataset.originalColor;
+                            }}
                             style={{
                               border: "1px solid #ccc",
-                              width: "40px",
-                              height: "35px",
-                              background: booked ? "#e53935" : "#43a047",
+                              background: booked ? "#f28b82" : "#a8d5ba", // base soft colors
                               cursor: "pointer",
+                              height: "35px",
+                              transition: "background-color 0.2s ease",
                             }}
                             title={booked ? "Booked" : "Available"}
                           ></td>

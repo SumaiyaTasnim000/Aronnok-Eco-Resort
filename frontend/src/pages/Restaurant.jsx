@@ -32,15 +32,8 @@ function Restaurant({ role }) {
       const res = await axios.get(`${API_BASE}/restaurants`, {
         headers: { Authorization: token },
       });
-      let data = res.data;
 
-      // Role-based visibility
-      if (role === "manager") {
-        const userId = JSON.parse(atob(token.split(".")[1])).uid;
-        data = data.filter((r) => r.res_createdByUid === userId);
-      }
-
-      setRestaurants(data);
+      setRestaurants(res.data);
     } catch (err) {
       console.error(
         "fetchRestaurants error:",
@@ -202,7 +195,7 @@ function Restaurant({ role }) {
           marginBottom: "30px",
         }}
       >
-        Restaurant Management
+        👨‍🍳 Restaurant Management
       </h2>
       {/* ✅ White Card Wrapper (same as Expenses.jsx) */}
       <div
