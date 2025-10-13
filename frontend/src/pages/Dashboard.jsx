@@ -127,7 +127,7 @@ function Dashboard() {
         }}
       >
         <label style={{ fontWeight: 600, color: "#0d47a1" }}>
-          Select Week Starting From:{" "}
+          Go to:{" "}
           <input
             type="date"
             onChange={(e) => generateWeekFromDate(e.target.value)}

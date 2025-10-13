@@ -116,9 +116,6 @@ function Salary({ role }) {
     [staffs]
   );
 
-  // When sname changes, default stype to that staff's type (first match)
-  // When sname changes, auto-fill type & previous monthly salary
-  // ✅ Auto-fill staff type & monthly salary when selecting a staff name
   // ✅ Auto-fill staff type & monthly salary when selecting a staff name
   useEffect(() => {
     if (form.sname && staffs.length > 0) {
@@ -322,31 +319,12 @@ function Salary({ role }) {
         await axios.put(`${API_BASE}/salaries/${editingId}`, form, axiosAuth);
         setMessage("Salary updated successfully");
         setMessageColor("green");
-      } else {
-        // ✅ Calculate spaidDays in frontend before sending
-        let diffDays = 0;
-        if (form.spaidFrom && form.spaidUntil) {
-          const from = new Date(form.spaidFrom);
-          const until = new Date(form.spaidUntil);
-          diffDays = Math.floor((until - from) / (1000 * 60 * 60 * 24)) + 1; // inclusive
-        }
 
-        const res = await axios.post(
-          `${API_BASE}/salaries`,
-          {
-            staffId: staffRecord?._id, // ✅ reference to staff
-            spaidFrom: form.spaidFrom,
-            spaidUntil: form.spaidUntil,
-            spaidDays: diffDays, // ✅ now included
-            spaidSalary: form.spaidSalary,
-          },
-          axiosAuth
-        );
+        // ✅ Refresh salaries instantly (if View All is open)
+        if (viewAll) await fetchSalaries();
 
-        setMessage(res.data.message || "Salary saved successfully");
-        setMessageColor("green");
-
-        // ✅ Reset form and refetch salaries without reloading
+        // ✅ Reset form
+        setEditingId(null);
         setForm({
           sname: "",
           stype: "",
@@ -356,14 +334,48 @@ function Salary({ role }) {
           spaidDays: "",
           spaidSalary: "",
         });
-        setEditingId(null);
 
-        // ✅ Keep "View All" open and refresh table
-        if (viewAll) {
-          fetchSalaries();
-        }
+        return; // stop here if editing
       }
+
+      // ✅ Only runs if not editing
+      let diffDays = 0;
+      if (form.spaidFrom && form.spaidUntil) {
+        const from = new Date(form.spaidFrom);
+        const until = new Date(form.spaidUntil);
+        diffDays = Math.floor((until - from) / (1000 * 60 * 60 * 24)) + 1;
+      }
+
+      const res = await axios.post(
+        `${API_BASE}/salaries`,
+        {
+          staffId: staffRecord?._id,
+          spaidFrom: form.spaidFrom,
+          spaidUntil: form.spaidUntil,
+          spaidDays: diffDays,
+          spaidSalary: form.spaidSalary,
+        },
+        axiosAuth
+      );
+
+      setMessage(res.data.message || "Salary saved successfully");
+      setMessageColor("green");
+
+      // ✅ Reset form and refetch
+      setForm({
+        sname: "",
+        stype: "",
+        spaidFrom: "",
+        spaidUntil: "",
+        smonthly: "",
+        spaidDays: "",
+        spaidSalary: "",
+      });
+      setEditingId(null);
+
+      if (viewAll) fetchSalaries();
     } catch (err) {
+      console.error("Salary save error:", err);
       setMessage("Error saving salary");
       setMessageColor("crimson");
     }
@@ -570,7 +582,7 @@ function Salary({ role }) {
                 color: "#fff",
               }}
             >
-              + New
+              + New Staff
             </button>
           </div>
 
@@ -585,19 +597,27 @@ function Salary({ role }) {
           >
             <div style={{ flex: 1 }}>
               <label>Staff Type</label>
-              <select
+              <input
+                type="text"
                 value={form.stype}
                 onChange={(e) => setForm({ ...form, stype: e.target.value })}
-                style={{ width: "100%", padding: 8, marginTop: 4 }}
-                required
-              >
-                <option value="">Select type</option>
-                {uniqueStaffTypes.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
+                readOnly // ✅ always read-only
+                style={{
+                  width: "100%",
+                  padding: 8,
+                  marginTop: 4,
+                  background: "#f5f5f5",
+                  cursor: "not-allowed",
+                  color: "#000",
+                }}
+                placeholder="Auto-filled from selected staff"
+              />
+              {form.sname && (
+                <small style={{ color: "#666" }}>
+                  Auto-filled from selected staff. To edit, go to{" "}
+                  <b>Manage Staffs → Edit</b>.
+                </small>
+              )}
             </div>
           </div>
 
@@ -780,28 +800,22 @@ function Salary({ role }) {
                 type="number"
                 min="1"
                 value={form.smonthly}
-                onChange={(e) => {
-                  // Prevent editing if currently updating an existing record
-                  if (!editingId) {
-                    setForm({ ...form, smonthly: e.target.value });
-                  }
-                }}
-                readOnly={!!editingId} // ✅ lock field when editing existing salary
+                onChange={(e) => setForm({ ...form, smonthly: e.target.value })}
+                readOnly // ✅ always read-only
                 style={{
                   width: "100%",
                   padding: 8,
                   marginTop: 4,
-                  background: editingId ? "#f5f5f5" : "white",
-                  cursor: editingId ? "not-allowed" : "text",
+                  background: "#f5f5f5",
+                  cursor: "not-allowed",
                   color: "#000",
                 }}
-                required
+                placeholder="Auto-filled from selected staff"
               />
-              {editingId && (
-                <small
-                  style={{ color: "#d32f2f", display: "block", marginTop: 4 }}
-                >
-                  To edit salary, go to <b>Manage Staffs → Edit</b>.
+              {form.sname && (
+                <small style={{ color: "#666" }}>
+                  Auto-filled from selected staff. To edit, go to{" "}
+                  <b>Manage Staffs → Edit</b>.
                 </small>
               )}
             </div>
@@ -1144,7 +1158,7 @@ function Salary({ role }) {
       </div>
     </PageWrapper>
   );
-}
+} // closes function Salary properly
 
 const th = {
   textAlign: "left",
