@@ -266,7 +266,11 @@ function Restaurant({ role }) {
             />
             {errors.res_date && (
               <p
-                style={{ color: "crimson", fontSize: "13px", marginTop: "4px" }}
+                style={{
+                  color: "crimson",
+                  fontSize: "13px",
+                  marginTop: "4px",
+                }}
               >
                 {errors.res_date}
               </p>
@@ -295,7 +299,11 @@ function Restaurant({ role }) {
             />
             {errors.res_amountEarned && (
               <p
-                style={{ color: "crimson", fontSize: "13px", marginTop: "4px" }}
+                style={{
+                  color: "crimson",
+                  fontSize: "13px",
+                  marginTop: "4px",
+                }}
               >
                 {errors.res_amountEarned}
               </p>

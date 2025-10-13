@@ -135,6 +135,7 @@ function Expenses({ role }) {
       edate: expense.edate.split("T")[0],
       ename: expense.ename,
       eamount: expense.eamount,
+      ecategoryId: expense.ecategoryId?._id || "", // ✅ fixes dropdown not showing selected category
     });
     setEditingId(expense._id);
     setMessage("");
@@ -560,7 +561,7 @@ function Expenses({ role }) {
                 onClick={cancelEdit}
                 style={{
                   background: "#d32f2f",
-                  color: "#2b3f7aff",
+                  color: "#fff",
                   padding: "10px 20px",
                   marginLeft: 10,
                   border: "none",
