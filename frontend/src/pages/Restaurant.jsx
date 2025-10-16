@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
+import axios from "../utils/axiosSetup";
 import Swal from "sweetalert2";
 import PageWrapper from "../components/PageWrapper"; // ✅ import wrapper
 
@@ -198,17 +198,7 @@ function Restaurant({ role }) {
         👨‍🍳 Restaurant Management
       </h2>
       {/* ✅ White Card Wrapper (same as Expenses.jsx) */}
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "850px",
-          background: "#ffffff",
-          borderRadius: "22px",
-          padding: "45px 50px",
-          boxShadow: "0 15px 45px rgba(0, 0, 0, 0.15)",
-          margin: "80px auto",
-        }}
-      >
+      <div className="responsive-card">
         {/* View All toggle */}
         <div style={{ textAlign: "center", marginBottom: 20 }}>
           <button
@@ -448,138 +438,140 @@ function Restaurant({ role }) {
             {filteredRestaurants.length === 0 ? (
               <p>No records found.</p>
             ) : (
-              <div>
-                <table
-                  style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    border: "1px solid #ddd",
-                    marginTop: 20,
-                  }}
-                >
-                  <thead>
-                    <tr style={{ background: "#f2f2f2" }}>
-                      <th style={{ border: "1px solid #ddd", padding: 8 }}>
-                        #
-                      </th>
-                      <th style={{ border: "1px solid #ddd", padding: 8 }}>
-                        Date
-                      </th>
-                      <th style={{ border: "1px solid #ddd", padding: 8 }}>
-                        Amount Earned (৳)
-                      </th>
-                      {role === "admin" && (
-                        <th style={{ border: "1px solid #ddd", padding: 8 }}>
-                          Actions
-                        </th>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentEntries.map((r, i) => (
-                      <tr key={r._id}>
-                        <td style={{ border: "1px solid #ddd", padding: 8 }}>
-                          {(currentPage - 1) * entriesPerPage + (i + 1)}
-                        </td>
-                        <td style={{ border: "1px solid #ddd", padding: 8 }}>
-                          {new Date(r.res_date).toLocaleDateString()}
-                        </td>
-                        <td style={{ border: "1px solid #ddd", padding: 8 }}>
-                          {r.res_amountEarned}
-                        </td>
-                        {role === "admin" && (
-                          <td style={{ border: "1px solid #ddd", padding: 8 }}>
-                            <button
-                              onClick={() => handleEdit(r)}
-                              style={{
-                                background: "#007bff",
-                                color: "#fff",
-                                padding: "6px 12px",
-                                border: "none",
-                                borderRadius: 4,
-                                marginRight: 8,
-                                cursor: "pointer",
-                              }}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDelete(r._id)}
-                              style={{
-                                background: "#dc3545",
-                                color: "#fff",
-                                padding: "6px 12px",
-                                border: "none",
-                                borderRadius: 4,
-                                cursor: "pointer",
-                              }}
-                            >
-                              Delete
-                            </button>
-                          </td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                {/* 🆕 Pagination Controls */}
-                {filteredRestaurants.length > entriesPerPage && (
-                  <div
+              <>
+                <div className="table-wrap">
+                  <table
                     style={{
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      border: "1px solid #ddd",
                       marginTop: 20,
-                      gap: "10px",
                     }}
                   >
-                    <button
-                      onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                      disabled={currentPage === 1}
-                      style={{
-                        padding: "8px 16px",
-                        background: currentPage === 1 ? "#ccc" : "#0d47a1",
-                        color: "white",
-                        border: "none",
-                        borderRadius: 6,
-                        cursor: currentPage === 1 ? "not-allowed" : "pointer",
-                      }}
-                    >
-                      ← Previous
-                    </button>
+                    <thead>
+                      <tr style={{ background: "#f2f2f2" }}>
+                        <th style={{ border: "1px solid #ddd", padding: 8 }}>
+                          #
+                        </th>
+                        <th style={{ border: "1px solid #ddd", padding: 8 }}>
+                          Date
+                        </th>
+                        <th style={{ border: "1px solid #ddd", padding: 8 }}>
+                          Amount Earned (৳)
+                        </th>
+                        {role === "admin" && (
+                          <th style={{ border: "1px solid #ddd", padding: 8 }}>
+                            Actions
+                          </th>
+                        )}
+                      </tr>
+                    </thead>
 
-                    <span style={{ fontWeight: "bold" }}>
-                      Page {currentPage} of {totalPages}
-                    </span>
+                    <tbody>
+                      {currentEntries.map((r, i) => (
+                        <tr key={r._id}>
+                          <td style={{ border: "1px solid #ddd", padding: 8 }}>
+                            {(currentPage - 1) * entriesPerPage + (i + 1)}
+                          </td>
+                          <td style={{ border: "1px solid #ddd", padding: 8 }}>
+                            {new Date(r.res_date).toLocaleDateString()}
+                          </td>
+                          <td style={{ border: "1px solid #ddd", padding: 8 }}>
+                            {r.res_amountEarned}
+                          </td>
+                          {role === "admin" && (
+                            <td
+                              style={{ border: "1px solid #ddd", padding: 8 }}
+                            >
+                              <button
+                                onClick={() => handleEdit(r)}
+                                style={{
+                                  background: "#007bff",
+                                  color: "#fff",
+                                  padding: "6px 12px",
+                                  border: "none",
+                                  borderRadius: 4,
+                                  marginRight: 8,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDelete(r._id)}
+                                style={{
+                                  background: "#dc3545",
+                                  color: "#fff",
+                                  padding: "6px 12px",
+                                  border: "none",
+                                  borderRadius: 4,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
 
-                    <button
-                      onClick={() =>
-                        setCurrentPage((p) => Math.min(p + 1, totalPages))
-                      }
-                      disabled={currentPage === totalPages}
-                      style={{
-                        padding: "8px 16px",
-                        background:
-                          currentPage === totalPages ? "#ccc" : "#0d47a1",
-                        color: "white",
-                        border: "none",
-                        borderRadius: 6,
-                        cursor:
-                          currentPage === totalPages
-                            ? "not-allowed"
-                            : "pointer",
-                      }}
-                    >
-                      Next →
-                    </button>
-                  </div>
-                )}
+            {/* 🆕 Pagination Controls */}
+            {filteredRestaurants.length > entriesPerPage && (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  marginTop: 20,
+                  gap: "10px",
+                }}
+              >
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  style={{
+                    padding: "8px 16px",
+                    background: currentPage === 1 ? "#ccc" : "#0d47a1",
+                    color: "white",
+                    border: "none",
+                    borderRadius: 6,
+                    cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                  }}
+                >
+                  ← Previous
+                </button>
+
+                <span style={{ fontWeight: "bold" }}>
+                  Page {currentPage} of {totalPages}
+                </span>
+
+                <button
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(p + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                  style={{
+                    padding: "8px 16px",
+                    background: currentPage === totalPages ? "#ccc" : "#0d47a1",
+                    color: "white",
+                    border: "none",
+                    borderRadius: 6,
+                    cursor:
+                      currentPage === totalPages ? "not-allowed" : "pointer",
+                  }}
+                >
+                  Next →
+                </button>
               </div>
             )}
           </div>
         )}
-      </div>{" "}
+      </div>
     </PageWrapper>
   );
 }

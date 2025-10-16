@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import axios from "axios";
+import axios from "../utils/axiosSetup";
 import Swal from "sweetalert2";
 import PageWrapper from "../components/PageWrapper";
 
@@ -484,7 +484,7 @@ function Salary({ role }) {
           textAlign: "center",
           color: "#0d47a1",
           fontWeight: 700,
-          fontSize: "1.8rem",
+          fontSize: "clamp(1.4rem, 4vw, 1.8rem)", // ✅ responsive sizing
           marginBottom: "30px",
         }}
       >
@@ -493,12 +493,14 @@ function Salary({ role }) {
       <div
         style={{
           width: "100%",
-          maxWidth: "850px",
+          maxWidth: "90vw", // ✅ shrink automatically on phones
           background: "#ffffff",
           borderRadius: "22px",
-          padding: "45px 50px",
+          padding: "35px 25px", // ✅ softer padding on small screens
           boxShadow: "0 15px 45px rgba(0, 0, 0, 0.15)",
-          margin: "80px auto",
+          margin: "60px auto",
+          boxSizing: "border-box",
+          overflowX: "auto", // ✅ avoid horizontal cut-off
         }}
       >
         {/* View toggle */}
@@ -1021,8 +1023,19 @@ function Salary({ role }) {
             </div>
 
             {/* Table View */}
-            <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <div
+              style={{
+                overflowX: "auto",
+                WebkitOverflowScrolling: "touch", // ✅ smooth scroll on mobile
+              }}
+            >
+              <table
+                style={{
+                  width: "100%",
+                  minWidth: "700px", // ✅ prevent column squish on small screens
+                  borderCollapse: "collapse",
+                }}
+              >
                 <thead>
                   <tr style={{ background: "#f0f3f5" }}>
                     <th style={th}>#</th>

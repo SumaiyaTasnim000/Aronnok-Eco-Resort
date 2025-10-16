@@ -6,15 +6,16 @@ const PageWrapper = ({ children }) => {
     <div
       style={{
         minHeight: "100vh",
-        width: "100vw",
+        width: "100%", // ✅ replaces 100vw to avoid overflow
         background:
           "linear-gradient(180deg, #a8d8ff 0%, #6fc3ff 40%, #1e88e5 100%)",
         display: "flex",
         justifyContent: "center",
         alignItems: "flex-start",
-        padding: "100px 20px",
+        padding: "100px 16px", // ✅ slightly smaller padding
         position: "relative",
-        overflow: "visible",
+        overflowX: "hidden", // ✅ prevent right cut
+        boxSizing: "border-box",
       }}
     >
       {/* soft glowing circles for subtle hue effect */}

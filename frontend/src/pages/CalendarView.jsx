@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import axios from "../utils/axiosSetup";
 import { useNavigate } from "react-router-dom";
 import PageWrapper from "../components/PageWrapper";
 console.log("✅ CalendarView rendering now");
