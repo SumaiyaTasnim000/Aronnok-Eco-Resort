@@ -1,6 +1,6 @@
 // frontend/src/pages/Bookings.jsx
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../utils/axiosSetup";
 
 function Bookings() {
   const API_BASE = "http://localhost:5001/api/bookings";

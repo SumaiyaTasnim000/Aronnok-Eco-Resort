@@ -1,6 +1,6 @@
 // frontend/src/pages/Rooms.jsx
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import axios from "../utils/axiosSetup";
 import PageWrapper from "../components/PageWrapper";
 import Swal from "sweetalert2";
 import { useLocation } from "react-router-dom";
@@ -297,360 +297,156 @@ function Rooms({ role }) {
 
   return (
     <PageWrapper>
-      <h2
+      <div
         style={{
-          textAlign: "center",
-          color: "#0d47a1",
-          fontWeight: 700,
-          fontSize: "1.8rem",
-          marginBottom: "30px",
+          width: "100%",
+          maxWidth: "900px", // ✅ fixed content bound
+          margin: "0 auto",
+          padding: "0 16px", // ✅ consistent inner spacing
+          boxSizing: "border-box",
         }}
       >
-        🛌 Room Booking
-      </h2>
-
-      {/* Date selection */}
-      <form
-        onSubmit={checkAvailability}
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: "12px",
-          marginBottom: "25px", // ⬅ spacing below filters
-        }}
-      >
-        <label style={{ fontWeight: 500 }}>
-          Start Date:
-          <input
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-            required
-            style={{
-              marginLeft: "6px",
-              padding: "6px 10px",
-              borderRadius: "6px",
-              border: "1px solid #bbb",
-            }}
-          />
-        </label>
-
-        <label style={{ fontWeight: 500 }}>
-          End Date:
-          <input
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-            required
-            style={{
-              marginLeft: "6px",
-              padding: "6px 10px",
-              borderRadius: "6px",
-              border: "1px solid #bbb",
-            }}
-          />
-        </label>
-
-        <button
-          type="submit"
+        <h2
           style={{
-            backgroundColor: "#884892ff",
-            color: "#fff",
-            padding: "10px 18px",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontWeight: 600,
+            textAlign: "center",
+            color: "#0d47a1",
+            fontWeight: 700,
+            fontSize: "1.8rem",
+            marginBottom: "30px",
           }}
-          disabled={loading}
         >
-          {loading ? "Checking..." : "Check Availability"}
-        </button>
-      </form>
+          🛌 Room Booking
+        </h2>
 
-      {error && (
-        <div
-          style={{ color: "crimson", textAlign: "center", marginBottom: 10 }}
+        {/* Date selection */}
+        <form
+          onSubmit={checkAvailability}
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "12px",
+            marginBottom: "25px",
+            width: "100%",
+            boxSizing: "border-box",
+          }}
         >
-          {error}
-        </div>
-      )}
-      {message && (
-        <div style={{ color: "green", textAlign: "center", marginBottom: 20 }}>
-          {message}
-        </div>
-      )}
+          <label style={{ fontWeight: 500 }}>
+            Start Date:
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              required
+              style={{
+                marginLeft: "6px",
+                padding: "6px 10px",
+                borderRadius: "6px",
+                border: "1px solid #bbb",
+              }}
+            />
+          </label>
 
-      {/* Room list */}
-      <div>
-        {availableRooms.map((room) => (
-          <div
-            id={`room-${room.rid}`}
-            key={room.rid}
+          <label style={{ fontWeight: 500 }}>
+            End Date:
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              required
+              style={{
+                marginLeft: "6px",
+                padding: "6px 10px",
+                borderRadius: "6px",
+                border: "1px solid #bbb",
+              }}
+            />
+          </label>
+
+          <button
+            type="submit"
             style={{
-              width: 760,
-              margin: "12px auto",
-              padding: "16px 24px", // 🆕 wider inner padding (left + right)
-              border: "2px solid #020202ff",
-              borderRadius: 8,
-              background: "#fff",
-              textAlign: "left",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "flex-start", // 🆕 so tall forms align at top, not middle
-              gap: "20px", // 🆕 space between left info & right form/details
+              backgroundColor: "#884892ff",
+              color: "#fff",
+              padding: "10px 18px",
+              border: "none",
+              borderRadius: "6px",
+              cursor: "pointer",
+              fontWeight: 600,
             }}
+            disabled={loading}
           >
-            <div>
-              <h3>{room.rname}</h3>
-              <div>Category: {room.rcategory}</div>
-              <div>Price: {room.rprice}</div>
+            {loading ? "Checking..." : "Check Availability"}
+          </button>
+        </form>
+
+        {error && (
+          <div
+            style={{ color: "crimson", textAlign: "center", marginBottom: 10 }}
+          >
+            {error}
+          </div>
+        )}
+        {message && (
+          <div
+            style={{ color: "green", textAlign: "center", marginBottom: 20 }}
+          >
+            {message}
+          </div>
+        )}
+
+        {/* Room list */}
+        <div>
+          {availableRooms.map((room) => (
+            <div
+              id={`room-${room.rid}`}
+              key={room.rid}
+              style={{
+                width: "100%",
+                maxWidth: "760px",
+                margin: "12px auto",
+                padding: "16px 24px",
+                border: "2px solid #020202ff",
+                borderRadius: 8,
+                background: "#fff",
+                textAlign: "left",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                gap: "20px",
+                flexWrap: "wrap", // ✅ allows vertical stacking on mobile
+              }}
+            >
               <div>
-                Availability:{" "}
-                {room.available ? (
-                  <span style={{ color: "green" }}>Available</span>
-                ) : (
-                  <span style={{ color: "red" }}>Not Available</span>
-                )}
+                <h3>{room.rname}</h3>
+                <div>Category: {room.rcategory}</div>
+                <div>Price: {room.rprice}</div>
+                <div>
+                  Availability:{" "}
+                  {room.available ? (
+                    <span style={{ color: "green" }}>Available</span>
+                  ) : (
+                    <span style={{ color: "red" }}>Not Available</span>
+                  )}
+                </div>
               </div>
-            </div>
 
-            <div style={{ textAlign: "right" }}>
-              {room.available ? (
-                // ✅ Hide "Book Now" if currently booking this room
-                selectedRoom?.rid === room.rid ? null : (
-                  <button
-                    onClick={() => handleBookNow(room)}
-                    style={{
-                      background: "green",
-                      color: "white",
-                      padding: "6px 12px",
-                      borderRadius: "6px",
-                      border: "none",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Book Now
-                  </button>
-                )
-              ) : // ✅ Hide "View Details" if this room's details are currently expanded
-              viewBooking?.rid === room.rid ? null : (
-                <button
-                  onClick={() => fetchBookingDetails(room)}
-                  style={{
-                    background: "blue",
-                    color: "white",
-                    padding: "6px 12px",
-                    borderRadius: "6px",
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  View Details
-                </button>
-              )}
-
-              {/* Booking form */}
-              {selectedRoom?.rid === room.rid && (
-                <form
-                  onSubmit={submitBooking}
-                  style={{
-                    marginTop: 12,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 10,
-                    paddingRight: "10px",
-                    width: "320px", // 🆕 keeps all fields uniform
-                    alignItems: "center", // 🆕 centers everything under the banner
-                  }}
-                >
-                  {/* Selected Date Range Display */}
-                  <div
-                    style={{
-                      marginBottom: "6px",
-                      background: "#f0f4ff",
-                      padding: "6px 10px",
-                      borderRadius: "6px",
-                      color: "#0d47a1",
-                      fontWeight: "600",
-                      fontSize: "14px",
-                      textAlign: "center",
-                      width: "100%", // ✅ same width as inputs
-                    }}
-                  >
-                    Room booking from{" "}
-                    <span style={{ fontWeight: "700" }}>
-                      {formatDate(startDate)}
-                    </span>{" "}
-                    to{" "}
-                    <span style={{ fontWeight: "700" }}>
-                      {formatDate(endDate)}
-                    </span>
-                  </div>
-
-                  {/* Customer Name */}
-                  <input
-                    placeholder="Customer name"
-                    value={formData.cname}
-                    onChange={(e) =>
-                      setFormData({ ...formData, cname: e.target.value })
-                    }
-                    required
-                    style={{
-                      width: "100%", // ✅ keep
-                      maxWidth: "320px", // 🆕 same as form
-                      padding: 8,
-                      border: "1px solid #ccc",
-                      borderRadius: "6px",
-                    }}
-                  />
-
-                  {/* Contact field with +880 */}
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      width: "100%",
-                      maxWidth: "320px", // 🟢 match all input widths
-                      border: "1px solid #ccc",
-                      borderRadius: "6px",
-                      overflow: "hidden", // 🟢 keeps edges neat
-                      background: "#fff",
-                    }}
-                  >
-                    <span
-                      style={{
-                        background: "#eee",
-                        padding: "8px 10px",
-                        fontWeight: "bold",
-                        borderRight: "1px solid #ccc",
-                        flexShrink: 0,
-                      }}
-                    >
-                      +880
-                    </span>
-                    <input
-                      type="number"
-                      placeholder="1XXXXXXXXX"
-                      value={formData.ccontact}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (/^\d{0,10}$/.test(value)) {
-                          setFormData({ ...formData, ccontact: value });
-                        }
-                      }}
-                      required
-                      min="1000000000"
-                      max="1999999999"
-                      onInvalid={(e) =>
-                        e.target.setCustomValidity(
-                          "Please enter a valid 10-digit BD phone number after +880"
-                        )
-                      }
-                      onInput={(e) => e.target.setCustomValidity("")}
-                      style={{
-                        flex: 1,
-                        padding: "8px 10px",
-                        border: "none",
-                        outline: "none",
-                      }}
-                    />
-                  </div>
-
-                  {/* Advance */}
-                  <input
-                    placeholder="Advance"
-                    type="number"
-                    min="1"
-                    step="any"
-                    value={formData.advance}
-                    onChange={(e) =>
-                      setFormData({ ...formData, advance: e.target.value })
-                    }
-                    style={{
-                      width: "100%", // ✅ keep
-                      maxWidth: "320px", // 🆕 same as form
-                      padding: 8,
-                      border: "1px solid #ccc",
-                      borderRadius: "6px",
-                    }}
-                    required
-                    onInvalid={(e) =>
-                      e.target.setCustomValidity(
-                        "Advance amount cannot be 0 or negative (-)"
-                      )
-                    }
-                    onInput={(e) => e.target.setCustomValidity("")}
-                  />
-
-                  {/* Advance Receiver */}
-                  <input
-                    placeholder="Advance Receiver"
-                    value={formData.advanceReceiver}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        advanceReceiver: e.target.value,
-                      })
-                    }
-                    style={{
-                      width: "100%", // ✅ keep
-                      maxWidth: "320px", // 🆕 same as form
-                      padding: 8,
-                      border: "1px solid #ccc",
-                      borderRadius: "6px",
-                    }}
-                  />
-
-                  {/* Due */}
-                  {/* Due */}
-                  <input
-                    placeholder="Due Amount"
-                    type="number"
-                    min="0"
-                    step="any"
-                    value={formData.due}
-                    onChange={(e) =>
-                      setFormData({ ...formData, due: e.target.value })
-                    }
-                    style={{
-                      width: "100%", // ✅ keep
-                      maxWidth: "320px", // 🆕 same as form
-                      padding: 8,
-                      border: "1px solid #ccc",
-                      borderRadius: "6px",
-                    }}
-                    required
-                    onInvalid={(e) =>
-                      e.target.setCustomValidity(
-                        "Due amount cannot be negative (-)"
-                      )
-                    }
-                    onInput={(e) => e.target.setCustomValidity("")}
-                  />
-
-                  {/* Due Receiver */}
-                  <input
-                    placeholder="Due Receiver"
-                    value={formData.dueReceiver}
-                    onChange={(e) =>
-                      setFormData({ ...formData, dueReceiver: e.target.value })
-                    }
-                    style={{
-                      width: "100%", // ✅ keep
-                      maxWidth: "320px", // 🆕 same as form
-                      padding: 8,
-                      border: "1px solid #ccc",
-                      borderRadius: "6px",
-                    }}
-                  />
-
-                  {/* Buttons */}
-                  <div>
+              <div
+                style={{
+                  textAlign: "right",
+                  flex: 1,
+                  minWidth: "250px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-end",
+                }}
+              >
+                {room.available ? (
+                  // ✅ Hide "Book Now" if currently booking this room
+                  selectedRoom?.rid === room.rid ? null : (
                     <button
-                      type="submit"
+                      onClick={() => handleBookNow(room)}
                       style={{
                         background: "green",
                         color: "white",
@@ -658,156 +454,393 @@ function Rooms({ role }) {
                         borderRadius: "6px",
                         border: "none",
                         cursor: "pointer",
-                        marginRight: 8,
                       }}
                     >
-                      {viewBooking ? "Update" : "Submit Booking"}
+                      Book Now
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedRoom(null)}
-                      style={{
-                        background: "red",
-                        color: "white",
-                        padding: "6px 12px",
-                        borderRadius: "6px",
-                        border: "none",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              )}
+                  )
+                ) : // ✅ Hide "View Details" if this room's details are currently expanded
+                viewBooking?.rid === room.rid ? null : (
+                  <button
+                    onClick={() => fetchBookingDetails(room)}
+                    style={{
+                      background: "blue",
+                      color: "white",
+                      padding: "6px 12px",
+                      borderRadius: "6px",
+                      border: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    View Details
+                  </button>
+                )}
 
-              {/* Booking details */}
-              {viewBooking && viewBooking.rid === room.rid && (
-                <div
-                  style={{
-                    marginTop: 14,
-                    background: "#f9f9ff",
-                    border: "1.5px solid #ccc",
-                    borderRadius: "10px",
-                    padding: "14px 16px",
-                    boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                    textAlign: "left",
-                    fontSize: "15px",
-                  }}
-                >
-                  <div style={{ marginBottom: "10px" }}>
-                    {/* Date Range Header */}
+                {/* Booking form */}
+                {selectedRoom?.rid === room.rid && (
+                  <form
+                    onSubmit={submitBooking}
+                    style={{
+                      marginTop: 12,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 10,
+                      paddingRight: "10px",
+                      width: "100%",
+                      maxWidth: "340px", // ✅ same for desktop
+                      alignItems: "center",
+                    }}
+                  >
+                    {/* Selected Date Range Display */}
                     <div
                       style={{
-                        background: "#e3f2fd",
+                        marginBottom: "6px",
+                        background: "#f0f4ff",
                         padding: "6px 10px",
                         borderRadius: "6px",
                         color: "#0d47a1",
                         fontWeight: "600",
                         fontSize: "14px",
-                        marginBottom: "10px",
                         textAlign: "center",
+                        width: "100%", // ✅ same width as inputs
                       }}
                     >
-                      Room booked from{" "}
+                      Room booking from{" "}
                       <span style={{ fontWeight: "700" }}>
-                        {formatDate(viewBooking.startDate)}
+                        {formatDate(startDate)}
                       </span>{" "}
                       to{" "}
                       <span style={{ fontWeight: "700" }}>
-                        {formatDate(viewBooking.endDate)}
+                        {formatDate(endDate)}
                       </span>
                     </div>
 
-                    <p>
-                      <strong>Customer:</strong> {viewBooking.cname || "—"}
-                    </p>
-                    <p>
-                      <strong>Contact:</strong>{" "}
-                      <span style={{ color: "#333" }}>
-                        {viewBooking.ccontact || "—"}
-                      </span>
-                    </p>
-                    <p>
-                      <strong>Advance:</strong>{" "}
-                      <span style={{ color: "#1b5e20", fontWeight: "600" }}>
-                        {viewBooking.advance || 0}
-                      </span>
-                    </p>
-                    <p>
-                      <strong>Advance Receiver:</strong>{" "}
-                      <span style={{ color: "#333" }}>
-                        {viewBooking.advanceReceiver || "—"}
-                      </span>
-                    </p>
-                    <p>
-                      <strong>Due:</strong>{" "}
+                    {/* Customer Name */}
+                    <input
+                      placeholder="Customer name"
+                      value={formData.cname}
+                      onChange={(e) =>
+                        setFormData({ ...formData, cname: e.target.value })
+                      }
+                      required
+                      style={{
+                        width: "100%", // ✅ keep
+                        maxWidth: "320px", // 🆕 same as form
+                        padding: 8,
+                        border: "1px solid #ccc",
+                        borderRadius: "6px",
+                      }}
+                    />
+
+                    {/* Contact field with +880 */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        width: "100%",
+                        maxWidth: "320px", // 🟢 match all input widths
+                        border: "1px solid #ccc",
+                        borderRadius: "6px",
+                        overflow: "hidden", // 🟢 keeps edges neat
+                        background: "#fff",
+                      }}
+                    >
                       <span
                         style={{
-                          color: viewBooking.due < 0 ? "crimson" : "#0d47a1",
-                          fontWeight: "600",
+                          background: "#eee",
+                          padding: "8px 10px",
+                          fontWeight: "bold",
+                          borderRight: "1px solid #ccc",
+                          flexShrink: 0,
                         }}
                       >
-                        {viewBooking.due}
+                        +880
                       </span>
-                    </p>
-                    <p>
-                      <strong>Due Receiver:</strong>{" "}
-                      <span style={{ color: "#333" }}>
-                        {viewBooking.dueReceiver || "—"}
-                      </span>
-                    </p>
-                  </div>
-
-                  {role === "admin" && (
-                    <div
-                      style={{ display: "flex", gap: "8px", marginTop: "8px" }}
-                    >
-                      <button
-                        onClick={() => {
-                          setFormData({
-                            cname: viewBooking.cname,
-                            ccontact: viewBooking.ccontact,
-                            advance: viewBooking.advance,
-                            advanceReceiver: viewBooking.advanceReceiver,
-                            due: viewBooking.due,
-                            dueReceiver: viewBooking.dueReceiver,
-                          });
-                          setSelectedRoom(room);
+                      <input
+                        type="number"
+                        placeholder="1XXXXXXXXX"
+                        value={formData.ccontact}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (/^\d{0,10}$/.test(value)) {
+                            setFormData({ ...formData, ccontact: value });
+                          }
                         }}
+                        required
+                        min="1000000000"
+                        max="1999999999"
+                        onInvalid={(e) =>
+                          e.target.setCustomValidity(
+                            "Please enter a valid 10-digit BD phone number after +880"
+                          )
+                        }
+                        onInput={(e) => e.target.setCustomValidity("")}
                         style={{
-                          background: "#f57c00",
+                          flex: 1,
+                          padding: "8px 10px",
+                          border: "none",
+                          outline: "none",
+                        }}
+                      />
+                    </div>
+
+                    {/* Advance */}
+                    <input
+                      placeholder="Advance"
+                      type="number"
+                      min="1"
+                      step="any"
+                      value={formData.advance}
+                      onChange={(e) =>
+                        setFormData({ ...formData, advance: e.target.value })
+                      }
+                      style={{
+                        width: "100%", // ✅ keep
+                        maxWidth: "320px", // 🆕 same as form
+                        padding: 8,
+                        border: "1px solid #ccc",
+                        borderRadius: "6px",
+                      }}
+                      required
+                      onInvalid={(e) =>
+                        e.target.setCustomValidity(
+                          "Advance amount cannot be 0 or negative (-)"
+                        )
+                      }
+                      onInput={(e) => e.target.setCustomValidity("")}
+                    />
+
+                    {/* Advance Receiver */}
+                    <input
+                      placeholder="Advance Receiver"
+                      value={formData.advanceReceiver}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          advanceReceiver: e.target.value,
+                        })
+                      }
+                      style={{
+                        width: "100%", // ✅ keep
+                        maxWidth: "320px", // 🆕 same as form
+                        padding: 8,
+                        border: "1px solid #ccc",
+                        borderRadius: "6px",
+                      }}
+                    />
+
+                    {/* Due */}
+                    {/* Due */}
+                    <input
+                      placeholder="Due Amount"
+                      type="number"
+                      min="0"
+                      step="any"
+                      value={formData.due}
+                      onChange={(e) =>
+                        setFormData({ ...formData, due: e.target.value })
+                      }
+                      style={{
+                        width: "100%", // ✅ keep
+                        maxWidth: "320px", // 🆕 same as form
+                        padding: 8,
+                        border: "1px solid #ccc",
+                        borderRadius: "6px",
+                      }}
+                      required
+                      onInvalid={(e) =>
+                        e.target.setCustomValidity(
+                          "Due amount cannot be negative (-)"
+                        )
+                      }
+                      onInput={(e) => e.target.setCustomValidity("")}
+                    />
+
+                    {/* Due Receiver */}
+                    <input
+                      placeholder="Due Receiver"
+                      value={formData.dueReceiver}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          dueReceiver: e.target.value,
+                        })
+                      }
+                      style={{
+                        width: "100%", // ✅ keep
+                        maxWidth: "320px", // 🆕 same as form
+                        padding: 8,
+                        border: "1px solid #ccc",
+                        borderRadius: "6px",
+                      }}
+                    />
+
+                    {/* Buttons */}
+                    <div>
+                      <button
+                        type="submit"
+                        style={{
+                          background: "green",
                           color: "white",
                           padding: "6px 12px",
                           borderRadius: "6px",
                           border: "none",
                           cursor: "pointer",
-                          fontWeight: "600",
+                          marginRight: 8,
                         }}
                       >
-                        Edit
+                        {viewBooking ? "Update" : "Submit Booking"}
                       </button>
                       <button
-                        onClick={deleteBooking}
+                        type="button"
+                        onClick={() => setSelectedRoom(null)}
                         style={{
-                          background: "#c62828",
+                          background: "red",
                           color: "white",
                           padding: "6px 12px",
                           borderRadius: "6px",
                           border: "none",
                           cursor: "pointer",
-                          fontWeight: "600",
                         }}
                       >
-                        Cancel Booking
+                        Cancel
                       </button>
                     </div>
-                  )}
-                </div>
-              )}
+                  </form>
+                )}
+
+                {/* Booking details */}
+                {viewBooking && viewBooking.rid === room.rid && (
+                  <div
+                    style={{
+                      marginTop: 14,
+                      background: "#f9f9ff",
+                      border: "1.5px solid #ccc",
+                      borderRadius: "10px",
+                      padding: "14px 16px",
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                      textAlign: "left",
+                      fontSize: "15px",
+                    }}
+                  >
+                    <div style={{ marginBottom: "10px" }}>
+                      {/* Date Range Header */}
+                      <div
+                        style={{
+                          background: "#e3f2fd",
+                          padding: "6px 10px",
+                          borderRadius: "6px",
+                          color: "#0d47a1",
+                          fontWeight: "600",
+                          fontSize: "14px",
+                          marginBottom: "10px",
+                          textAlign: "center",
+                        }}
+                      >
+                        Room booked from{" "}
+                        <span style={{ fontWeight: "700" }}>
+                          {formatDate(viewBooking.startDate)}
+                        </span>{" "}
+                        to{" "}
+                        <span style={{ fontWeight: "700" }}>
+                          {formatDate(viewBooking.endDate)}
+                        </span>
+                      </div>
+
+                      <p>
+                        <strong>Customer:</strong> {viewBooking.cname || "—"}
+                      </p>
+                      <p>
+                        <strong>Contact:</strong>{" "}
+                        <span style={{ color: "#333" }}>
+                          {viewBooking.ccontact || "—"}
+                        </span>
+                      </p>
+                      <p>
+                        <strong>Advance:</strong>{" "}
+                        <span style={{ color: "#1b5e20", fontWeight: "600" }}>
+                          {viewBooking.advance || 0}
+                        </span>
+                      </p>
+                      <p>
+                        <strong>Advance Receiver:</strong>{" "}
+                        <span style={{ color: "#333" }}>
+                          {viewBooking.advanceReceiver || "—"}
+                        </span>
+                      </p>
+                      <p>
+                        <strong>Due:</strong>{" "}
+                        <span
+                          style={{
+                            color: viewBooking.due < 0 ? "crimson" : "#0d47a1",
+                            fontWeight: "600",
+                          }}
+                        >
+                          {viewBooking.due}
+                        </span>
+                      </p>
+                      <p>
+                        <strong>Due Receiver:</strong>{" "}
+                        <span style={{ color: "#333" }}>
+                          {viewBooking.dueReceiver || "—"}
+                        </span>
+                      </p>
+                    </div>
+
+                    {role === "admin" && (
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "8px",
+                          marginTop: "8px",
+                        }}
+                      >
+                        <button
+                          onClick={() => {
+                            setFormData({
+                              cname: viewBooking.cname,
+                              ccontact: viewBooking.ccontact,
+                              advance: viewBooking.advance,
+                              advanceReceiver: viewBooking.advanceReceiver,
+                              due: viewBooking.due,
+                              dueReceiver: viewBooking.dueReceiver,
+                            });
+                            setSelectedRoom(room);
+                          }}
+                          style={{
+                            background: "#f57c00",
+                            color: "white",
+                            padding: "6px 12px",
+                            borderRadius: "6px",
+                            border: "none",
+                            cursor: "pointer",
+                            fontWeight: "600",
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={deleteBooking}
+                          style={{
+                            background: "#c62828",
+                            color: "white",
+                            padding: "6px 12px",
+                            borderRadius: "6px",
+                            border: "none",
+                            cursor: "pointer",
+                            fontWeight: "600",
+                          }}
+                        >
+                          Cancel Booking
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </PageWrapper>
   );

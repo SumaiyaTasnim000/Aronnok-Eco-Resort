@@ -1,6 +1,6 @@
 // frontend/src/pages/Login.jsx
 import React, { useState } from "react";
-import axios from "axios";
+import axios from "../utils/axiosSetup";
 import Navbar from "../components/Navbar";
 import PageWrapper from "../components/PageWrapper";
 
@@ -115,20 +115,17 @@ const styles = {
     minHeight: "100vh",
     background: "linear-gradient(135deg, #74ebd5 0%, #ACB6E5 100%)",
   },
-  container: {
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    height: "calc(100vh - 60px)",
-    paddingTop: "60px",
-  },
+
   centerBox: {
     width: "100%",
     height: "70vh",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
+    padding: "20px", // ✅ adds breathing room on mobile
+    boxSizing: "border-box",
   },
+
   card: {
     background: "#fff",
     padding: "40px",
@@ -136,12 +133,16 @@ const styles = {
     boxShadow: "0 8px 20px rgba(0,0,0,0.1)",
     textAlign: "center",
     width: "350px",
+    maxWidth: "90vw", // ✅ auto shrink on phones
+    transition: "all 0.3s ease",
   },
+
   title: {
     marginBottom: "20px",
     fontSize: "24px",
     color: "#333",
   },
+
   label: {
     display: "block",
     textAlign: "left",
@@ -149,6 +150,7 @@ const styles = {
     fontSize: "14px",
     color: "#555",
   },
+
   input: {
     width: "100%",
     padding: "10px 12px",
@@ -157,12 +159,14 @@ const styles = {
     border: "1px solid #ccc",
     fontSize: "14px",
     boxSizing: "border-box",
-    height: "40px", // ensure consistent height
+    height: "40px",
   },
+
   passwordWrapper: {
     position: "relative",
     width: "100%",
   },
+
   toggleButton: {
     position: "absolute",
     top: "50%",
@@ -177,8 +181,9 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    zIndex: 10, // ensure button is above input
+    zIndex: 10,
   },
+
   button: {
     width: "100%",
     padding: "12px",
@@ -190,6 +195,7 @@ const styles = {
     cursor: "pointer",
     transition: "0.3s",
   },
+
   error: {
     color: "red",
     marginBottom: "15px",

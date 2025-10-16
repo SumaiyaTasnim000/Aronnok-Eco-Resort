@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
+import axios from "../utils/axiosSetup";
 import PageWrapper from "../components/PageWrapper";
 import Swal from "sweetalert2";
-
 function Expenses({ role }) {
   const API_BASE = "http://localhost:5001/api";
   const token = localStorage.getItem("token");
@@ -213,6 +212,7 @@ function Expenses({ role }) {
 
   return (
     <PageWrapper>
+      {" "}
       <h2
         style={{
           textAlign: "center",
@@ -224,17 +224,7 @@ function Expenses({ role }) {
       >
         🧾 Expense Management
       </h2>
-      <div
-        style={{
-          width: "100%",
-          maxWidth: "850px",
-          background: "#ffffff",
-          borderRadius: "22px",
-          padding: "45px 50px",
-          boxShadow: "0 15px 45px rgba(0, 0, 0, 0.15)",
-          margin: "80px auto",
-        }}
-      >
+      <div className="responsive-card">
         {/* ✅ Toggle Button */}
         <div style={{ textAlign: "center", marginBottom: 20 }}>
           <button
@@ -294,7 +284,8 @@ function Expenses({ role }) {
           {/* Category Dropdown */}
           <div style={{ marginBottom: 12 }}>
             <label>Expense Category</label>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div className="stack-on-mobile">
+              {" "}
               <select
                 value={form.ecategoryId || ""}
                 onChange={(e) =>
@@ -318,7 +309,6 @@ function Expenses({ role }) {
                     </option>
                   ))}
               </select>
-
               {/* Add new category */}
               <button
                 type="button"
@@ -713,93 +703,97 @@ function Expenses({ role }) {
               <p>No expenses found.</p>
             ) : (
               <>
-                <table
-                  style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    border: "1px solid #ddd",
-                    marginTop: 20,
-                  }}
-                >
-                  <thead>
-                    <tr style={{ background: "#f2f2f2" }}>
-                      <th style={{ border: "1px solid #ddd", padding: 8 }}>
-                        #
-                      </th>
-                      <th style={{ border: "1px solid #ddd", padding: 8 }}>
-                        Date
-                      </th>
-                      <th style={{ border: "1px solid #ddd", padding: 8 }}>
-                        Category
-                      </th>
-                      <th style={{ border: "1px solid #ddd", padding: 8 }}>
-                        Name of Cost
-                      </th>
-                      <th style={{ border: "1px solid #ddd", padding: 8 }}>
-                        Amount (৳)
-                      </th>
-                      {role === "admin" && (
+                <div className="table-wrap">
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      border: "1px solid #ddd",
+                      marginTop: 20,
+                    }}
+                  >
+                    <thead>
+                      <tr style={{ background: "#f2f2f2" }}>
                         <th style={{ border: "1px solid #ddd", padding: 8 }}>
-                          Actions
+                          #
                         </th>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentEntries.map((e, i) => (
-                      <tr key={e._id}>
-                        <td style={{ border: "1px solid #ddd", padding: 8 }}>
-                          {(currentPage - 1) * entriesPerPage + (i + 1)}
-                        </td>
-                        <td style={{ border: "1px solid #ddd", padding: 8 }}>
-                          {new Date(e.edate).toLocaleDateString()}
-                        </td>
-                        <td style={{ border: "1px solid #ddd", padding: 8 }}>
-                          {e.ecategoryId?.expcatname || "—"}
-                        </td>
-                        <td style={{ border: "1px solid #ddd", padding: 8 }}>
-                          {e.ename}
-                        </td>
-                        <td style={{ border: "1px solid #ddd", padding: 8 }}>
-                          {e.eamount}
-                        </td>
-
+                        <th style={{ border: "1px solid #ddd", padding: 8 }}>
+                          Date
+                        </th>
+                        <th style={{ border: "1px solid #ddd", padding: 8 }}>
+                          Category
+                        </th>
+                        <th style={{ border: "1px solid #ddd", padding: 8 }}>
+                          Name of Cost
+                        </th>
+                        <th style={{ border: "1px solid #ddd", padding: 8 }}>
+                          Amount (৳)
+                        </th>
                         {role === "admin" && (
-                          <td style={{ border: "1px solid #ddd", padding: 8 }}>
-                            <button
-                              onClick={() => handleEdit(e)}
-                              style={{
-                                background: "#007bff",
-                                color: "#fff",
-                                padding: "6px 12px",
-                                border: "none",
-                                borderRadius: 4,
-                                marginRight: 8,
-                                cursor: "pointer",
-                              }}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDelete(e._id)}
-                              style={{
-                                background: "#dc3545",
-                                color: "#fff",
-                                padding: "6px 12px",
-                                border: "none",
-                                borderRadius: 4,
-                                cursor: "pointer",
-                              }}
-                            >
-                              Delete
-                            </button>
-                          </td>
+                          <th style={{ border: "1px solid #ddd", padding: 8 }}>
+                            Actions
+                          </th>
                         )}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {currentEntries.map((e, i) => (
+                        <tr key={e._id}>
+                          <td style={{ border: "1px solid #ddd", padding: 8 }}>
+                            {(currentPage - 1) * entriesPerPage + (i + 1)}
+                          </td>
+                          <td style={{ border: "1px solid #ddd", padding: 8 }}>
+                            {new Date(e.edate).toLocaleDateString()}
+                          </td>
+                          <td style={{ border: "1px solid #ddd", padding: 8 }}>
+                            {e.ecategoryId?.expcatname || "—"}
+                          </td>
+                          <td style={{ border: "1px solid #ddd", padding: 8 }}>
+                            {e.ename}
+                          </td>
+                          <td style={{ border: "1px solid #ddd", padding: 8 }}>
+                            {e.eamount}
+                          </td>
 
+                          {role === "admin" && (
+                            <td
+                              style={{ border: "1px solid #ddd", padding: 8 }}
+                            >
+                              <button
+                                onClick={() => handleEdit(e)}
+                                style={{
+                                  background: "#007bff",
+                                  color: "#fff",
+                                  padding: "6px 12px",
+                                  border: "none",
+                                  borderRadius: 4,
+                                  marginRight: 8,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDelete(e._id)}
+                                style={{
+                                  background: "#dc3545",
+                                  color: "#fff",
+                                  padding: "6px 12px",
+                                  border: "none",
+                                  borderRadius: 4,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>{" "}
+                {/* ✅ Close the table-wrap div here */}
                 {/* 🆕 Pagination Controls */}
                 {filteredExpenses.length > entriesPerPage && (
                   <div
@@ -856,8 +850,7 @@ function Expenses({ role }) {
             )}
           </div>
         )}
-      </div>{" "}
-      {/* closes main white card container */}
+      </div>
     </PageWrapper>
   );
 }
