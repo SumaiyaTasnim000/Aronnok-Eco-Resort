@@ -56,7 +56,7 @@ function Login({ onLogin }) {
               style={{
                 ...styles.input,
                 paddingRight: 50,
-                backgroundColor: "#333",
+                backgroundColor: "#fffefeff",
               }}
             />
             <button
@@ -78,7 +78,7 @@ function Login({ onLogin }) {
                   focusable="false"
                 >
                   <path
-                    fill="#fff"
+                    fill="#111010ff"
                     d="M17.94 17.94A10.94 10.94 0 0 0 21 12c-1.9-4.28-6.15-7.5-9-7.5-1.23 0-2.43.4-3.45 1.08l1.45 1.45A3.99 3.99 0 0 1 12 7.5c2.21 0 4 1.79 4 4 0 .9-.31 1.73-.82 2.38l1.76 1.76zM2.1 2.1L.69 3.51l3.1 3.1A10.94 10.94 0 0 0 3 12c1.9 4.28 6.15 7.5 9 7.5 1.23 0 2.43-.4 3.45-1.08l3.05 3.05 1.41-1.41L2.1 2.1zM8.53 10.06l1.47 1.47A1.5 1.5 0 0 0 12 11.5c.83 0 1.5.67 1.5 1.5 0 .32-.1.62-.26.86l1.37 1.37A3.5 3.5 0 0 1 12 13.5a3.5 3.5 0 0 1-3.47-3.44z"
                   />
                 </svg>
@@ -92,7 +92,7 @@ function Login({ onLogin }) {
                   focusable="false"
                 >
                   <path
-                    fill="#fff"
+                    fill="#131212ff"
                     d="M12 5c-5 0-9 4-10 7 1 3 5 7 10 7s9-4 10-7c-1-3-5-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"
                   />
                   <circle cx="12" cy="12" r="2.5" fill="#fff" />
@@ -140,7 +140,7 @@ const styles = {
   title: {
     marginBottom: "20px",
     fontSize: "24px",
-    color: "#333",
+    color: "#0e0e0eff",
   },
 
   label: {
@@ -148,7 +148,7 @@ const styles = {
     textAlign: "left",
     marginBottom: "6px",
     fontSize: "14px",
-    color: "#555",
+    color: "#0e0e0eff",
   },
 
   input: {
