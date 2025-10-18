@@ -276,7 +276,7 @@ function Rooms({ role }) {
 
       await Swal.fire({
         title: "Deleted!",
-        text: "Booking deleted successfully (soft delete).",
+        text: "Booking deleted successfully!",
         icon: "success",
         timer: 1800,
         showConfirmButton: false,
@@ -300,9 +300,9 @@ function Rooms({ role }) {
       <div
         style={{
           width: "100%",
-          maxWidth: "900px", // ✅ fixed content bound
+          maxWidth: "900px", 
           margin: "0 auto",
-          padding: "0 16px", // ✅ consistent inner spacing
+          padding: "0 16px", 
           boxSizing: "border-box",
         }}
       >
@@ -629,7 +629,7 @@ function Rooms({ role }) {
                       }}
                     />
 
-                    {/* Due */}
+                   
                     {/* Due */}
                     <input
                       placeholder="Due Amount"

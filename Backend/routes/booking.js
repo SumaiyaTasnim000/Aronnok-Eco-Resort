@@ -115,7 +115,7 @@ router.patch("/:id/delete", auth("admin"), async (req, res) => {
     );
 
     res.json({
-      message: "Booking soft deleted ✅",
+      message: "Booking deleted ✅",
       booking: deleted,
       updatedRoom: deleted.rid,
     });
