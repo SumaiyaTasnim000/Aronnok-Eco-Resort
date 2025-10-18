@@ -94,22 +94,14 @@ function Bookings() {
     }
   };
 
-  // Edit booking
+  // ✏️ Edit booking
   const handleEdit = (booking) => {
-    if (role !== "admin") {
-      alert("Only admins can edit bookings ❌");
-      return;
-    }
     setForm(booking);
     setShowForm(true);
   };
 
-  // Soft delete booking
+  // 🗑️ Soft delete booking
   const handleDelete = async (id) => {
-    if (role !== "admin") {
-      alert("Only admins can delete bookings ❌");
-      return;
-    }
     if (!window.confirm("Are you sure you want to delete this booking?"))
       return;
 
@@ -117,10 +109,12 @@ function Bookings() {
       const res = await axios.patch(
         `${API_BASE}/${id}/delete`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } } // ✅ fix: send auth header
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      alert(res.data?.message || "Booking deleted (soft) ✅");
-      fetchBookings();
+      alert(res.data?.message || "Booking deleted successfully ✅");
+
+      // ✅ Wait for refreshed data
+      await fetchBookings();
     } catch (err) {
       console.error("Delete error:", err.response?.data || err.message);
       alert(err.response?.data?.message || "Error deleting booking ❌");
