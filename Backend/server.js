@@ -30,6 +30,10 @@ app.use("/api/staffs", require("./routes/staffs"));
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/expenseCategories", expenseCategoryRoutes);
 
+app.get("/api/health", (req, res) => {
+  res.json({ status: "ok", time: new Date() });
+});
+
 const PORT = process.env.PORT || 5001;
 
 // Connect to MongoDB
