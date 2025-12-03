@@ -13,7 +13,19 @@ const dashboardRoutes = require("./routes/dashboard");
 const expenseCategoryRoutes = require("./routes/expenseCategories");
 
 const app = express();
-app.use(cors());
+const allowedOrigins = ["https://aronnok-eco-resort.netlify.app"];
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  })
+);
+
+// handle OPTIONS (preflight)
+app.options("*", cors());
 app.use(express.json());
 
 // test route
