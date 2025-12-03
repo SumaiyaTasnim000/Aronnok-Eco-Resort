@@ -1,7 +1,8 @@
 import axios from "axios";
 import Swal from "sweetalert2";
 
-export const API_BASE = "https://<your-heroku-app>.herokuapp.com/api";
+export const API_BASE =
+  "https://aronnok-eco-resort-bd4043c4eb8b.herokuapp.com/api";
 
 const axiosInstance = axios.create({
   baseURL: API_BASE,
