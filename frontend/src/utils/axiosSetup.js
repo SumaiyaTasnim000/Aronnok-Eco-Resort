@@ -1,7 +1,7 @@
 import axios from "axios";
 import Swal from "sweetalert2";
 
-const API_BASE = "http://localhost:5001/api";
+export const API_BASE = "https://<your-heroku-app>.herokuapp.com/api";
 
 const axiosInstance = axios.create({
   baseURL: API_BASE,
