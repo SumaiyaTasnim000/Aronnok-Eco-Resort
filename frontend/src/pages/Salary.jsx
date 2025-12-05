@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import axios from "../utils/axiosSetup";
+import axiosInstance from "../utils/axiosSetup";
 import Swal from "sweetalert2";
 import PageWrapper from "../components/PageWrapper";
+import { useNavigate } from "react-router-dom";
 
 function Salary({ role }) {
-  const API_BASE = "http://localhost:5001/api";
   const token = localStorage.getItem("token");
 
   // ---------------- State ----------------
@@ -34,14 +34,10 @@ function Salary({ role }) {
   const viewRef = useRef(null);
 
   // ---------------- Fetch helpers ----------------
-  const axiosAuth = useMemo(() => {
-    const authHeader = token?.startsWith("Bearer ") ? token : `Bearer ${token}`;
-    return { headers: { Authorization: authHeader } };
-  }, [token]);
 
   const fetchSalaries = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/salaries`, axiosAuth);
+      const res = await axiosInstance.get("/salaries");
       setSalaries(res.data);
     } catch (err) {
       console.error("fetchSalaries error:", err.response?.data || err.message);
@@ -50,7 +46,7 @@ function Salary({ role }) {
 
   const fetchStaffs = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/staffs`, axiosAuth);
+      const res = await axiosInstance.get("/staffs");
       setStaffs(res.data);
     } catch (err) {
       console.error("fetchStaffs error:", err.response?.data || err.message);
@@ -167,7 +163,7 @@ function Salary({ role }) {
     if (!result) return;
 
     try {
-      const res = await axios.post(`${API_BASE}/staffs`, result, axiosAuth);
+      const res = await axiosInstance.post("/staffs", result);
       setStaffs((prev) => [res.data.staff, ...prev]);
       Swal.fire("Added!", "New staff saved successfully", "success");
       fetchStaffs();
@@ -194,7 +190,7 @@ function Salary({ role }) {
     if (!confirm.isConfirmed) return;
 
     try {
-      await axios.delete(`${API_BASE}/staffs/${staff._id}`, axiosAuth);
+      await axiosInstance.delete(`/staffs/${staff._id}`);
       setStaffs((prev) => prev.filter((s) => s._id !== staff._id));
       Swal.fire("Deleted!", "Staff has been deleted.", "success");
       // Clear form if currently selected name got deleted
@@ -248,15 +244,11 @@ function Salary({ role }) {
             smonthly: form.smonthly,
           });
 
-          const resStaff = await axios.post(
-            `${API_BASE}/staffs`,
-            {
-              sname: form.sname,
-              stype: form.stype,
-              smonthly: form.smonthly,
-            },
-            axiosAuth
-          );
+          const resStaff = await axiosInstance.post("/staffs", {
+            sname: form.sname,
+            stype: form.stype,
+            smonthly: form.smonthly,
+          });
 
           staffRecord = resStaff.data.staff;
           setStaffs((prev) => [resStaff.data.staff, ...prev]);
@@ -316,7 +308,7 @@ function Salary({ role }) {
 
     try {
       if (editingId) {
-        await axios.put(`${API_BASE}/salaries/${editingId}`, form, axiosAuth);
+        await axiosInstance.put(`/salaries/${editingId}`, form);
         setMessage("Salary updated successfully");
         setMessageColor("green");
 
@@ -346,17 +338,13 @@ function Salary({ role }) {
         diffDays = Math.floor((until - from) / (1000 * 60 * 60 * 24)) + 1;
       }
 
-      const res = await axios.post(
-        `${API_BASE}/salaries`,
-        {
-          staffId: staffRecord?._id,
-          spaidFrom: form.spaidFrom,
-          spaidUntil: form.spaidUntil,
-          spaidDays: diffDays,
-          spaidSalary: form.spaidSalary,
-        },
-        axiosAuth
-      );
+      const res = await axiosInstance.post("/salaries", {
+        staffId: staffRecord?._id,
+        spaidFrom: form.spaidFrom,
+        spaidUntil: form.spaidUntil,
+        spaidDays: diffDays,
+        spaidSalary: form.spaidSalary,
+      });
 
       setMessage(res.data.message || "Salary saved successfully");
       setMessageColor("green");
@@ -394,7 +382,7 @@ function Salary({ role }) {
     if (!result.isConfirmed) return;
 
     try {
-      const res = await axios.delete(`${API_BASE}/salaries/${id}`, axiosAuth);
+      const res = await axiosInstance.delete(`/salaries/${id}`);
       setMessage(res.data.message);
       setMessageColor("green");
       if (viewAll) fetchSalaries();
@@ -703,11 +691,11 @@ function Salary({ role }) {
                               });
                               if (!newData) return;
                               try {
-                                await axios.put(
-                                  `${API_BASE}/staffs/${st._id}`,
-                                  newData,
-                                  axiosAuth
+                                await axiosInstance.put(
+                                  `/staffs/${st._id}`,
+                                  newData
                                 );
+
                                 Swal.fire(
                                   "Updated!",
                                   "Staff info updated.",

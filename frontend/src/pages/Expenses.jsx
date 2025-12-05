@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
-import axios from "../utils/axiosSetup";
+import axiosInstance from "../utils/axiosSetup";
 import PageWrapper from "../components/PageWrapper";
 import Swal from "sweetalert2";
 function Expenses({ role }) {
-  const API_BASE = "http://localhost:5001/api";
   const token = localStorage.getItem("token");
 
-  const [form, setForm] = useState({ edate: "", ename: "", eamount: "" });
+  const [form, setForm] = useState({
+    edate: "",
+    ename: "",
+    eamount: "",
+    ecategoryId: "",
+  });
   const [message, setMessage] = useState("");
   const [messageColor, setMessageColor] = useState("");
   const [expenses, setExpenses] = useState([]);
@@ -30,9 +34,8 @@ function Expenses({ role }) {
   // Fetch all expenses
   const fetchExpenses = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/expenses`, {
-        headers: { Authorization: token },
-      });
+      const res = await axiosInstance.get("/expenses");
+
       setExpenses(res.data.filter((e) => !e.eisDeleted));
     } catch (err) {
       console.error("fetchExpenses error:", err.response?.data || err.message);
@@ -41,9 +44,8 @@ function Expenses({ role }) {
   // 🆕 Fetch all categories (add this right below)
   const fetchCategories = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/expenseCategories`, {
-        headers: { Authorization: token },
-      });
+      const res = await axiosInstance.get("/expenseCategories");
+
       setCategories(res.data);
     } catch (err) {
       console.error(
@@ -66,10 +68,6 @@ function Expenses({ role }) {
   useEffect(() => {
     fetchCategories();
   }, []);
-  useEffect(() => {
-    if (viewAll) fetchExpenses();
-    else setExpenses([]);
-  }, [viewAll]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -83,15 +81,13 @@ function Expenses({ role }) {
 
     try {
       if (editingId) {
-        await axios.put(`${API_BASE}/expenses/${editingId}`, form, {
-          headers: { Authorization: token },
-        });
+        const res = await axiosInstance.put(`/expenses/${editingId}`, form);
+
         setMessage("Expense updated successfully");
         setMessageColor("green");
       } else {
-        const res = await axios.post(`${API_BASE}/expenses`, form, {
-          headers: { Authorization: token },
-        });
+        const res = await axiosInstance.post("/expenses", form);
+
         setMessage(res.data.message || "Expense saved successfully");
         setMessageColor("green");
       }
@@ -118,9 +114,8 @@ function Expenses({ role }) {
 
     if (confirm.isConfirmed) {
       try {
-        const res = await axios.delete(`${API_BASE}/expenses/${id}`, {
-          headers: { Authorization: token },
-        });
+        await axiosInstance.delete(`/expenses/${id}`);
+
         Swal.fire("Deleted!", res.data.message, "success");
         if (viewAll) fetchExpenses();
       } catch {
@@ -153,7 +148,7 @@ function Expenses({ role }) {
   };
 
   const cancelEdit = () => {
-    setForm({ edate: "", ename: "", eamount: "" });
+    setForm({ edate: "", ename: "", eamount: "", ecategoryId: "" });
     setEditingId(null);
     setMessage("");
   };
@@ -323,11 +318,10 @@ function Expenses({ role }) {
                   if (!name) return;
 
                   try {
-                    await axios.post(
-                      `${API_BASE}/expenseCategories`,
-                      { expcatname: name },
-                      { headers: { Authorization: token } }
-                    );
+                    await axiosInstance.post("/expenseCategories", {
+                      expcatname: name,
+                    });
+
                     Swal.fire(
                       "Added!",
                       "Category created successfully",
@@ -402,11 +396,11 @@ function Expenses({ role }) {
                             });
                             if (!newName) return;
                             try {
-                              await axios.put(
-                                `${API_BASE}/expenseCategories/${cat._id}`,
-                                { expcatname: newName },
-                                { headers: { Authorization: token } }
+                              await axiosInstance.put(
+                                `/expenseCategories/${cat._id}`,
+                                { expcatname: newName }
                               );
+
                               Swal.fire(
                                 "Updated!",
                                 "Category name updated",
@@ -448,10 +442,10 @@ function Expenses({ role }) {
                             if (!confirm.isConfirmed) return;
 
                             try {
-                              await axios.delete(
-                                `${API_BASE}/expenseCategories/${cat._id}`,
-                                { headers: { Authorization: token } }
+                              await axiosInstance.delete(
+                                `/expenseCategories/${cat._id}`
                               );
+
                               Swal.fire(
                                 "Deleted!",
                                 "Category removed",

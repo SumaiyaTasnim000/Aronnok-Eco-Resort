@@ -1,10 +1,8 @@
 // frontend/src/pages/Bookings.jsx
 import React, { useState, useEffect } from "react";
-import axios from "../utils/axiosSetup";
+import axiosInstance from "../utils/axiosSetup";
 
 function Bookings() {
-  const API_BASE = "http://localhost:5001/api/bookings";
-  const token = localStorage.getItem("token");
   const role = localStorage.getItem("role"); // ✅ fix: use role from storage
 
   const [bookings, setBookings] = useState([]);
@@ -25,9 +23,7 @@ function Bookings() {
   // Fetch all bookings
   const fetchBookings = async () => {
     try {
-      const res = await axios.get(API_BASE, {
-        headers: { Authorization: `Bearer ${token}` }, // ✅ always send auth header
-      });
+      const res = await axiosInstance.get("/bookings");
       setBookings(res.data);
     } catch (err) {
       console.error(
@@ -73,13 +69,10 @@ function Bookings() {
           alert("Only admins can update bookings ❌");
           return;
         }
-        res = await axios.put(`${API_BASE}/${form._id}`, payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        res = await axiosInstance.put(`/bookings/${form._id}`, payload);
       } else {
-        res = await axios.post(API_BASE, payload, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // CREATE
+        res = await axiosInstance.post("/bookings", payload);
       }
 
       alert(res.data?.message || "Booking saved successfully ✅");
@@ -96,7 +89,12 @@ function Bookings() {
 
   // ✏️ Edit booking
   const handleEdit = (booking) => {
-    setForm(booking);
+    setForm({
+      ...booking,
+      startDate: booking.startDate?.slice(0, 10) || "",
+      endDate: booking.endDate?.slice(0, 10) || "",
+    });
+
     setShowForm(true);
   };
 
@@ -106,11 +104,7 @@ function Bookings() {
       return;
 
     try {
-      const res = await axios.patch(
-        `${API_BASE}/${id}/delete`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const res = await axiosInstance.patch(`/bookings/${id}/delete`);
       alert(res.data?.message || "Booking deleted successfully ✅");
 
       // ✅ Wait for refreshed data
@@ -272,13 +266,18 @@ function Bookings() {
               { name: "dueReceiver", label: "Due Receiver" },
             ].map((field) => (
               <div key={field.name} className="mb-4">
-                <label className="block mb-1 text-white">{field.label}</label>
+                <label
+                  className="block mb-1 text-black
+"
+                >
+                  {field.label}
+                </label>
                 <input
                   type="text"
                   name={field.name}
                   value={form[field.name]}
                   onChange={handleChange}
-                  className="w-full p-2 rounded border border-gray-300 focus:ring focus:ring-blue-200"
+                  className="w-full p-2 rounded border border-gray-300 bg-white text-black"
                 />
               </div>
             ))}

@@ -1,19 +1,26 @@
 // frontend/src/pages/Login.jsx
 import React, { useState } from "react";
-import axios from "../utils/axiosSetup";
-import Navbar from "../components/Navbar";
+import axiosInstance from "../utils/axiosSetup";
 import PageWrapper from "../components/PageWrapper";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 function Login({ onLogin }) {
   const [uemail, setUemail] = useState("");
   const [upassword, setUpassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token) navigate("/dashboard");
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await axios.post("http://localhost:5001/api/auth/login", {
+      const res = await axiosInstance.post("/auth/login", {
         uemail,
         upassword,
       });
@@ -29,8 +36,6 @@ function Login({ onLogin }) {
 
   return (
     <PageWrapper>
-      <Navbar />
-
       {/* ✅ Center the login form */}
       <div style={styles.centerBox}>
         <form onSubmit={handleSubmit} style={styles.card}>
@@ -56,7 +61,11 @@ function Login({ onLogin }) {
               style={{
                 ...styles.input,
                 paddingRight: 50,
-                backgroundColor: "#fffefeff",
+                backgroundColor: "#ffffff", // force pure white
+                color: "#000000", // ensure text stays black
+                border: "1px solid #ccc",
+                WebkitTextFillColor: "#000", // fixes Chrome dark mode override
+                WebkitAppearance: "none", // prevents dark mode auto-styling
               }}
             />
             <button
@@ -78,7 +87,7 @@ function Login({ onLogin }) {
                   focusable="false"
                 >
                   <path
-                    fill="#111010ff"
+                    fill="#555" // 🔥 neutral grey (works in both light & dark mode)
                     d="M17.94 17.94A10.94 10.94 0 0 0 21 12c-1.9-4.28-6.15-7.5-9-7.5-1.23 0-2.43.4-3.45 1.08l1.45 1.45A3.99 3.99 0 0 1 12 7.5c2.21 0 4 1.79 4 4 0 .9-.31 1.73-.82 2.38l1.76 1.76zM2.1 2.1L.69 3.51l3.1 3.1A10.94 10.94 0 0 0 3 12c1.9 4.28 6.15 7.5 9 7.5 1.23 0 2.43-.4 3.45-1.08l3.05 3.05 1.41-1.41L2.1 2.1zM8.53 10.06l1.47 1.47A1.5 1.5 0 0 0 12 11.5c.83 0 1.5.67 1.5 1.5 0 .32-.1.62-.26.86l1.37 1.37A3.5 3.5 0 0 1 12 13.5a3.5 3.5 0 0 1-3.47-3.44z"
                   />
                 </svg>
@@ -92,7 +101,7 @@ function Login({ onLogin }) {
                   focusable="false"
                 >
                   <path
-                    fill="#131212ff"
+                    fill="#555" // 🔥 same neutral grey
                     d="M12 5c-5 0-9 4-10 7 1 3 5 7 10 7s9-4 10-7c-1-3-5-7-10-7zm0 12a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"
                   />
                   <circle cx="12" cy="12" r="2.5" fill="#fff" />

@@ -1,9 +1,11 @@
 // frontend/src/pages/Rooms.jsx
 import React, { useState, useEffect } from "react";
-import axios from "../utils/axiosSetup";
+import axiosInstance from "../utils/axiosSetup";
 import PageWrapper from "../components/PageWrapper";
 import Swal from "sweetalert2";
 import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+
 // ✅ Helper to format date as MM/DD/YYYY
 const formatDate = (dateStr) => {
   if (!dateStr) return "—";
@@ -16,7 +18,11 @@ const formatDate = (dateStr) => {
 
 function Rooms({ role }) {
   const token = localStorage.getItem("token");
-  const API_BASE = "http://localhost:5001/api";
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!token) navigate("/");
+  }, []);
 
   try {
     if (!role) {
@@ -71,12 +77,6 @@ function Rooms({ role }) {
     return null;
   }
 
-  const axiosConfig = {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  };
-
   // ✅ Check room availability
   const checkAvailability = async (e) => {
     if (e) e.preventDefault();
@@ -93,11 +93,10 @@ function Rooms({ role }) {
 
     try {
       setLoading(true);
-      const res = await axios.post(
-        `${API_BASE}/rooms/check`,
-        { startDate, endDate },
-        axiosConfig
-      );
+      const res = await axiosInstance.post("/rooms/check", {
+        startDate,
+        endDate,
+      });
 
       const data = (res.data || []).map((r) => ({
         ...r,
@@ -200,18 +199,17 @@ function Rooms({ role }) {
 
       if (viewBooking && role === "admin") {
         // Update booking
-        res = await axios.put(
-          `${API_BASE}/bookings/${viewBooking._id}`,
-          { ...formData, rid: selectedRoom?.rid || viewBooking.rid },
-          axiosConfig
-        );
+        res = await axiosInstance.put(`/bookings/${viewBooking._id}`, {
+          ...formData,
+          rid: selectedRoom?.rid || viewBooking.rid,
+        });
       } else {
         // Create new booking -> use rooms/book/:rid route
-        res = await axios.post(
-          `${API_BASE}/rooms/book/${selectedRoom.rid}`,
-          { ...formData, startDate, endDate },
-          axiosConfig
-        );
+        await axiosInstance.post(`/rooms/book/${selectedRoom.rid}`, {
+          ...formData,
+          startDate,
+          endDate,
+        });
       }
 
       setMessage(res.data.message || "Booking saved successfully ✅");
@@ -235,7 +233,7 @@ function Rooms({ role }) {
     setMessage("");
     setSelectedRoom(null);
     try {
-      const res = await axios.get(`${API_BASE}/bookings`, axiosConfig);
+      const res = await axiosInstance.get("/bookings");
       const booking = res.data.find((b) => b.rid === room.rid && !b.isDeleted);
       if (!booking) {
         setError("No booking found for this room.");
@@ -268,11 +266,7 @@ function Rooms({ role }) {
     if (!confirmResult.isConfirmed) return; // user cancelled
 
     try {
-      await axios.patch(
-        `${API_BASE}/bookings/${viewBooking._id}/delete`,
-        {},
-        axiosConfig
-      );
+      await axiosInstance.patch(`/bookings/${viewBooking._id}/delete`);
 
       await Swal.fire({
         title: "Deleted!",
@@ -300,9 +294,9 @@ function Rooms({ role }) {
       <div
         style={{
           width: "100%",
-          maxWidth: "900px", 
+          maxWidth: "900px",
           margin: "0 auto",
-          padding: "0 16px", 
+          padding: "0 16px",
           boxSizing: "border-box",
         }}
       >
@@ -629,7 +623,6 @@ function Rooms({ role }) {
                       }}
                     />
 
-                   
                     {/* Due */}
                     <input
                       placeholder="Due Amount"

@@ -1,11 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
-import axios from "../utils/axiosSetup";
 import Swal from "sweetalert2";
 import PageWrapper from "../components/PageWrapper"; // ✅ import wrapper
+import axiosInstance from "../utils/axiosSetup";
+import { useNavigate } from "react-router-dom";
 
 function Restaurant({ role }) {
-  const API_BASE = "http://localhost:5001/api";
   const token = localStorage.getItem("token");
+  const navigate = useNavigate(); // ✅ added login redirect support
+
+  useEffect(() => {
+    if (!token) navigate("/");
+  }, []);
 
   const [form, setForm] = useState({
     res_date: "",
@@ -29,9 +34,7 @@ function Restaurant({ role }) {
 
   const fetchRestaurants = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/restaurants`, {
-        headers: { Authorization: token },
-      });
+      const res = await axiosInstance.get("/restaurants");
 
       setRestaurants(res.data);
     } catch (err) {
@@ -72,20 +75,18 @@ function Restaurant({ role }) {
 
     try {
       if (editingId) {
-        await axios.put(`${API_BASE}/restaurants/${editingId}`, form, {
-          headers: { Authorization: token },
-        });
+        await axiosInstance.put(`/restaurants/${editingId}`, form);
+
         setMessage("Restaurant entry updated successfully");
         setMessageColor("green");
       } else {
-        const res = await axios.post(`${API_BASE}/restaurants`, form, {
-          headers: { Authorization: token },
-        });
+        const res = await axiosInstance.post("/restaurants", form);
+
         setMessage(res.data.message || "Restaurant entry saved successfully");
         setMessageColor("green");
       }
 
-      setForm({ res_date: "", res_amountSpent: "", res_amountEarned: "" });
+      setForm({ res_date: "", res_amountEarned: "" });
       setEditingId(null);
       if (viewAll) fetchRestaurants();
     } catch (err) {
@@ -106,9 +107,8 @@ function Restaurant({ role }) {
 
     if (result.isConfirmed) {
       try {
-        const res = await axios.delete(`${API_BASE}/restaurants/${id}`, {
-          headers: { Authorization: token },
-        });
+        const res = await axiosInstance.delete(`/restaurants/${id}`);
+
         setMessage(res.data.message);
         setMessageColor("green");
         if (viewAll) fetchRestaurants();
@@ -134,7 +134,7 @@ function Restaurant({ role }) {
   };
 
   const cancelEdit = () => {
-    setForm({ res_date: "", res_amountSpent: "", res_amountEarned: "" });
+    setForm({ res_date: "", res_amountEarned: "" });
     setEditingId(null);
     setMessage("");
   };

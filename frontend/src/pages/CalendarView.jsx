@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from "react";
-import axios from "../utils/axiosSetup";
+import axiosInstance from "../utils/axiosSetup";
 import { useNavigate } from "react-router-dom";
 import PageWrapper from "../components/PageWrapper";
 console.log("✅ CalendarView rendering now");
 
 function CalendarView() {
-  const API_BASE = "http://localhost:5001/api";
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
+  useEffect(() => {
+    if (!token) navigate("/");
+  }, [token, navigate]);
 
   const [rooms, setRooms] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -36,13 +38,12 @@ function CalendarView() {
     if (!startDate || !endDate) return;
 
     try {
-      const axiosAuth = { headers: { Authorization: `Bearer ${token}` } };
-      const roomRes = await axios.post(
-        `${API_BASE}/rooms/check`,
-        { startDate, endDate },
-        axiosAuth
-      );
-      const bookingRes = await axios.get(`${API_BASE}/bookings`, axiosAuth);
+      const roomRes = await axiosInstance.post(`/rooms/check`, {
+        startDate,
+        endDate,
+      });
+
+      const bookingRes = await axiosInstance.get(`/bookings`);
 
       setRooms(roomRes.data || []);
       setBookings(bookingRes.data || []);

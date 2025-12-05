@@ -1,13 +1,15 @@
 // frontend/src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
-import axios from "../utils/axiosSetup";
+import axiosInstance from "../utils/axiosSetup";
 import { useNavigate } from "react-router-dom";
 import PageWrapper from "../components/PageWrapper";
 
 function Dashboard() {
-  const API_BASE = "http://localhost:5001/api";
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
+  useEffect(() => {
+    if (!token) navigate("/");
+  }, [token, navigate]);
 
   const [rooms, setRooms] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -37,9 +39,8 @@ function Dashboard() {
   // Fetch all rooms and bookings on mount
   const fetchData = async () => {
     try {
-      const axiosAuth = { headers: { Authorization: `Bearer ${token}` } };
-      const roomsRes = await axios.get(`${API_BASE}/rooms`);
-      const bookingsRes = await axios.get(`${API_BASE}/bookings`, axiosAuth);
+      const roomsRes = await axiosInstance.get("/rooms");
+      const bookingsRes = await axiosInstance.get("/bookings");
 
       setRooms(roomsRes.data || []);
       setBookings(bookingsRes.data || []);

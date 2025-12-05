@@ -4,11 +4,20 @@ import Swal from "sweetalert2";
 export const API_BASE =
   "https://aronnok-eco-resort-bd4043c4eb8b.herokuapp.com/api";
 
+// Create axios instance
 const axiosInstance = axios.create({
   baseURL: API_BASE,
-  headers: {
-    Authorization: `Bearer ${localStorage.getItem("token")}`,
-  },
+});
+
+// ✅ Interceptor to ALWAYS attach fresh token
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
+  return config;
 });
 
 // 🔄 Interceptor to handle expired tokens
