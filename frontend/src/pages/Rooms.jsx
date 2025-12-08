@@ -24,31 +24,14 @@ function Rooms({ role }) {
     if (!token) navigate("/");
   }, []);
 
-  try {
-    if (!role) {
-      let rawToken = token || "";
-      if (rawToken.startsWith("Bearer ")) rawToken = rawToken.slice(7).trim();
-      if (rawToken) {
-        const parts = rawToken.split(".");
-        if (parts.length === 3) {
-          const payload = JSON.parse(atob(parts[1]));
-          role =
-            payload.urole ||
-            payload.role ||
-            localStorage.getItem("role") ||
-            role;
-        } else {
-          role = localStorage.getItem("role") || role;
-        }
-      } else {
-        role = localStorage.getItem("role") || role;
-      }
-    }
-  } catch (err) {
-    // fallback quietly if token decode fails
-    role = localStorage.getItem("role") || role;
-    console.error("Role detection error:", err);
+  
+   if (!role) {
+  const storedRole = localStorage.getItem("role");
+  if (storedRole) {
+    role = storedRole;
   }
+}
+
   // =====================================================================
 
   const [availableRooms, setAvailableRooms] = useState([]);
@@ -212,7 +195,7 @@ function Rooms({ role }) {
         });
       } else {
         // Create new booking -> use rooms/book/:rid route
-        await axiosInstance.post(`/rooms/book/${selectedRoom.rid}`, {
+        res = await axiosInstance.post(`/rooms/book/${selectedRoom.rid}`, {
           ...formData,
           startDate,
           endDate,
