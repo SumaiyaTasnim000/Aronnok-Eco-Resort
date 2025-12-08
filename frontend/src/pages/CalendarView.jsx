@@ -105,20 +105,21 @@ function CalendarView() {
           new Date(b.startDate) <= date &&
           new Date(b.endDate) >= date
       );
-      if (booking)
-        alert(
-          `Room ${room.rname} is booked by ${
-            booking.cname
-          }\n(${booking.startDate.slice(0, 10)} → ${booking.endDate.slice(
-            0,
-            10
-          )})`
-        );
-    } else {
-      navigate("/rooms", {
-        state: { rid: room.rid, startDate: date.toISOString().slice(0, 10) },
-      });
+
+      if (booking) {
+        // ⭐ Instead of alert → navigate to Bookings page
+        navigate("/bookings", {
+          state: { booking }, // pass booking object
+        });
+      }
+
+      return; // important so it does not continue to "else" part
     }
+
+    // ⭐ If not booked → open Rooms page for new booking
+    navigate("/rooms", {
+      state: { rid: room.rid, startDate: date.toISOString().slice(0, 10) },
+    });
   };
 
   return (

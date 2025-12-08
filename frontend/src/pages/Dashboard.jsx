@@ -93,6 +93,27 @@ function Dashboard() {
   // Cell click: if booked → show info, else → open Rooms page
   // 🔹 Handle cell click (redirect to Rooms page)
   const handleCellClick = (room, date) => {
+    if (isBooked(room.rid, date)) {
+      const booking = bookings.find(
+        (b) =>
+          b.rid === room.rid &&
+          new Date(b.startDate) <= date &&
+          new Date(b.endDate) >= date
+      );
+
+      if (booking) {
+        navigate("/rooms", {
+          state: {
+            booking,
+            rid: room.rid,
+            startDate: date.toISOString().slice(0, 10),
+          },
+        });
+      }
+      return;
+    }
+
+    // If not booked, open Rooms page to book it
     navigate("/rooms", {
       state: {
         rid: room.rid,

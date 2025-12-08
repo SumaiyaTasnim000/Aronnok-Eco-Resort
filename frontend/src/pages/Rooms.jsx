@@ -69,9 +69,17 @@ function Rooms({ role }) {
   const [error, setError] = useState("");
   // ✅ Detect redirect from Dashboard (rid + date)
   const location = useLocation();
+
   const redirectedRid = location.state?.rid;
   const redirectedDate = location.state?.startDate;
+  const redirectedBooking = location.state?.booking;
 
+  // Load booking passed from Dashboard (for booked rooms)
+  useEffect(() => {
+    if (redirectedBooking) {
+      setViewBooking(redirectedBooking);
+    }
+  }, [redirectedBooking]);
   if (!token) {
     alert("You are not logged in! Please log in to continue.");
     return null;
@@ -129,11 +137,10 @@ function Rooms({ role }) {
     // Step 2: Wait until React updates the state, then fetch data
     const timer = setTimeout(async () => {
       try {
-        const res = await axios.post(
-          `${API_BASE}/rooms/check`,
-          { startDate: redirectedDate, endDate: redirectedDate },
-          axiosConfig
-        );
+        const res = await axiosInstance.post("/rooms/check", {
+          startDate: redirectedDate,
+          endDate: redirectedDate,
+        });
 
         const data = (res.data || []).map((r) => ({
           ...r,

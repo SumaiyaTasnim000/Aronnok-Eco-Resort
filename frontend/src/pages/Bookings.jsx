@@ -1,6 +1,7 @@
 // frontend/src/pages/Bookings.jsx
 import React, { useState, useEffect } from "react";
 import axiosInstance from "../utils/axiosSetup";
+import { useLocation } from "react-router-dom";
 
 function Bookings() {
   const role = localStorage.getItem("role"); // ✅ fix: use role from storage
@@ -19,7 +20,13 @@ function Bookings() {
     dueReceiver: "",
   });
   const [showForm, setShowForm] = useState(false);
-
+  const location = useLocation();
+  const incomingBooking = location.state?.booking;
+  useEffect(() => {
+    if (incomingBooking) {
+      setSelectedBooking(incomingBooking); // auto-open details
+    }
+  }, [incomingBooking]);
   // Fetch all bookings
   const fetchBookings = async () => {
     try {

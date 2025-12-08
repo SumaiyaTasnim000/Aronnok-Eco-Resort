@@ -2,25 +2,25 @@ import axios from "axios";
 import Swal from "sweetalert2";
 
 export const API_BASE =
+  import.meta.env.VITE_API_BASE_URL ||
   "https://aronnok-eco-resort-bd4043c4eb8b.herokuapp.com/api";
 
-// Create axios instance
 const axiosInstance = axios.create({
   baseURL: API_BASE,
 });
 
-// ✅ Interceptor to ALWAYS attach fresh token
+// ⛔ Remove headers: { Authorization: `Bearer ....` }
+// 👉 Interceptor handles this automatically.
+
 axiosInstance.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
-
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-
   return config;
 });
 
-// 🔄 Interceptor to handle expired tokens
+// Handle expired token
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -34,7 +34,7 @@ axiosInstance.interceptors.response.use(
       }).then(() => {
         localStorage.removeItem("token");
         localStorage.removeItem("role");
-        window.location.href = "/"; // redirect to login page
+        window.location.href = "/";
       });
     }
     return Promise.reject(error);
