@@ -1,61 +1,70 @@
 // frontend/src/pages/Dashboard.jsx
 import React, { useEffect, useState } from "react";
-import axiosInstance from "../utils/axiosSetup";
+import axios from "../utils/axiosSetup";
 import { useNavigate } from "react-router-dom";
 import PageWrapper from "../components/PageWrapper";
 
+console.log("✅ Dashboard rendering now");
+
 function Dashboard() {
+  const API_BASE = "http://localhost:5001/api";
   const token = localStorage.getItem("token");
   const navigate = useNavigate();
+
+  const [rooms, setRooms] = useState([]);
+  const [bookings, setBookings] = useState([]);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [visibleDates, setVisibleDates] = useState([]);
+
+  // 🔐 Redirect to login if no token
   useEffect(() => {
     if (!token) navigate("/");
   }, [token, navigate]);
 
-  const [rooms, setRooms] = useState([]);
-  const [bookings, setBookings] = useState([]);
-  const [visibleDates, setVisibleDates] = useState([]);
-
-  // ✅ Generate a full week (Monday–Sunday) from any selected date
-  const generateWeekFromDate = (selectedDate) => {
-    const selected = new Date(selectedDate);
-    const day = selected.getDay();
+  // ✅ Auto-set current week's Monday → Sunday on first load
+  useEffect(() => {
+    const today = new Date();
+    const day = today.getDay(); // 0 = Sunday
     const diffToMonday = day === 0 ? -6 : 1 - day;
-    const startOfWeek = new Date(selected);
-    startOfWeek.setDate(selected.getDate() + diffToMonday);
+
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() + diffToMonday);
+
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-    const newDates = [];
-    for (
-      let d = new Date(startOfWeek);
-      d <= endOfWeek;
-      d.setDate(d.getDate() + 1)
-    ) {
-      newDates.push(new Date(d));
-    }
-    setVisibleDates(newDates);
-  };
+    setStartDate(startOfWeek.toISOString().slice(0, 10));
+    setEndDate(endOfWeek.toISOString().slice(0, 10));
+  }, []);
 
-  // Fetch all rooms and bookings on mount
+  // -------------------- Fetch data --------------------
   const fetchData = async () => {
-    try {
-      const roomsRes = await axiosInstance.get("/rooms");
-      const bookingsRes = await axiosInstance.get("/bookings");
+    if (!startDate || !endDate) return;
 
-      setRooms(roomsRes.data || []);
-      setBookings(bookingsRes.data || []);
+    try {
+      const axiosAuth = { headers: { Authorization: `Bearer ${token}` } };
+
+      const roomRes = await axios.post(
+        `${API_BASE}/rooms/check`,
+        { startDate, endDate },
+        axiosAuth
+      );
+
+      const bookingRes = await axios.get(`${API_BASE}/bookings`, axiosAuth);
+
+      setRooms(roomRes.data || []);
+      setBookings(bookingRes.data || []);
+      generateVisibleDates(startDate, endDate);
     } catch (err) {
-      console.error("Error loading dashboard:", err);
+      console.error("Error loading calendar data:", err);
     }
   };
-  // ✅ Generate default week range (today ±3 days)
-  const generateInitialWeek = () => {
-    const today = new Date();
-    const start = new Date(today);
-    start.setDate(today.getDate() - 3);
-    const end = new Date(today);
-    end.setDate(today.getDate() + 3);
 
+  // -------------------- Generate Date Range --------------------
+  const generateVisibleDates = (from, to) => {
+    const start = new Date(from);
+    const end = new Date(to);
     const dates = [];
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
       dates.push(new Date(d));
@@ -63,24 +72,14 @@ function Dashboard() {
     setVisibleDates(dates);
   };
 
-  // Initialize when page loads
+  // ✅ Fetch automatically once startDate + endDate are ready
   useEffect(() => {
-    generateInitialWeek();
-    fetchData();
-  }, []);
+    if (startDate && endDate) {
+      fetchData();
+    }
+  }, [startDate, endDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Shift calendar by ±1 week
-  const shiftWeek = (direction) => {
-    const shift = direction === "next" ? 7 : -7;
-    const newDates = visibleDates.map((d) => {
-      const nd = new Date(d);
-      nd.setDate(d.getDate() + shift);
-      return nd;
-    });
-    setVisibleDates(newDates);
-  };
-
-  // Check if a room is booked for a given date
+  // -------------------- Check if room is booked (per day) --------------------
   const isBooked = (rid, date) => {
     return bookings.some((b) => {
       if (b.rid !== rid || b.isDeleted) return false;
@@ -90,36 +89,53 @@ function Dashboard() {
     });
   };
 
-  // Cell click: if booked → show info, else → open Rooms page
-  // 🔹 Handle cell click (redirect to Rooms page)
+  // -------------------- Week Navigation --------------------
+  const shiftWeek = (direction) => {
+    if (!startDate || !endDate) return;
+    const shift = direction === "next" ? 7 : -7;
+
+    const newStart = new Date(startDate);
+    newStart.setDate(newStart.getDate() + shift);
+
+    const newEnd = new Date(endDate);
+    newEnd.setDate(newEnd.getDate() + shift);
+
+    setStartDate(newStart.toISOString().slice(0, 10));
+    setEndDate(newEnd.toISOString().slice(0, 10));
+  };
+
+  // -------------------- Cell Click --------------------
   const handleCellClick = (room, date) => {
-    if (isBooked(room.rid, date)) {
-      const booking = bookings.find(
-        (b) =>
-          b.rid === room.rid &&
-          new Date(b.startDate) <= date &&
-          new Date(b.endDate) >= date
-      );
+    const clickedDate = date.toISOString().slice(0, 10);
 
-      if (booking) {
-        navigate("/rooms", {
-          state: {
-            booking,
-            rid: room.rid,
-            startDate: date.toISOString().slice(0, 10),
-          },
-        });
-      }
-      return;
+    // find if this cell's date has a booking
+    const booking = bookings.find(
+      (b) =>
+        b.rid === room.rid &&
+        new Date(b.startDate) <= date &&
+        new Date(b.endDate) >= date &&
+        !b.isDeleted
+    );
+
+    if (booking) {
+      // 🔴 BOOKED → redirect WITH booking info
+      navigate("/rooms", {
+        state: {
+          booking,
+          rid: room.rid,
+          startDate: booking.startDate.slice(0, 10),
+          endDate: booking.endDate.slice(0, 10),
+        },
+      });
+    } else {
+      // 🟢 AVAILABLE → redirect for new booking
+      navigate("/rooms", {
+        state: {
+          rid: room.rid,
+          startDate: clickedDate,
+        },
+      });
     }
-
-    // If not booked, open Rooms page to book it
-    navigate("/rooms", {
-      state: {
-        rid: room.rid,
-        startDate: date.toISOString().slice(0, 10),
-      },
-    });
   };
 
   return (
@@ -127,7 +143,7 @@ function Dashboard() {
       <div
         style={{
           width: "100%",
-          maxWidth: "95vw", // ✅ keep within viewport width
+          maxWidth: "95vw",
           overflowX: "auto",
           padding: "0 2vw",
           boxSizing: "border-box",
@@ -146,7 +162,7 @@ function Dashboard() {
           Aronnok Eco Resort Dashboard
         </h1>
 
-        {/* 🌿 Date Filter + Week Navigation Row */}
+        {/* 🌿 Date Selector + Week Navigation */}
         <div
           style={{
             display: "flex",
@@ -161,7 +177,18 @@ function Dashboard() {
             Go to:{" "}
             <input
               type="date"
-              onChange={(e) => generateWeekFromDate(e.target.value)}
+              value={startDate}
+              onChange={(e) => {
+                const selected = new Date(e.target.value);
+                const day = selected.getDay();
+                const diffToMonday = day === 0 ? -6 : 1 - day;
+                const startOfWeek = new Date(selected);
+                startOfWeek.setDate(selected.getDate() + diffToMonday);
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+                setStartDate(startOfWeek.toISOString().slice(0, 10));
+                setEndDate(endOfWeek.toISOString().slice(0, 10));
+              }}
               style={{
                 padding: "8px 12px",
                 borderRadius: "8px",
@@ -183,7 +210,7 @@ function Dashboard() {
             style={{
               display: "flex",
               gap: "10px",
-              flexWrap: "wrap", // ✅ allows stacking on smaller screens
+              flexWrap: "wrap",
               justifyContent: "center",
             }}
           >
@@ -224,11 +251,11 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Calendar Table */}
+        {/* 🌿 Calendar Table */}
         <div
           style={{
             overflowX: "auto",
-            WebkitOverflowScrolling: "touch", // ✅ smooth scroll on iOS
+            WebkitOverflowScrolling: "touch",
             background: "white",
             borderRadius: "10px",
             padding: "10px",
@@ -237,7 +264,7 @@ function Dashboard() {
           <table
             style={{
               width: "100%",
-              minWidth: "600px", // ✅ prevents text squishing on small screens
+              minWidth: "600px",
               borderCollapse: "collapse",
               textAlign: "center",
             }}
@@ -246,8 +273,8 @@ function Dashboard() {
               <tr
                 style={{
                   background:
-                    "linear-gradient(90deg, #bbdefb 0%, #64b5f6 100%)", // ✅ light → bright blue
-                  color: "#0d47a1", // ✅ dark blue text
+                    "linear-gradient(90deg, #bbdefb 0%, #64b5f6 100%)",
+                  color: "#0d47a1",
                   fontWeight: "700",
                 }}
               >
@@ -263,28 +290,66 @@ function Dashboard() {
                 ))}
               </tr>
             </thead>
+
             <tbody>
-              {rooms.map((room, idx) => (
-                <tr key={idx}>
-                  <td style={td}>{room.rcategory}</td>
-                  <td style={td}>{room.rname}</td>
-                  {visibleDates.map((date, i) => {
-                    const booked = isBooked(room.rid, date);
-                    return (
-                      <td
-                        key={i}
-                        onClick={() => handleCellClick(room, date)}
-                        style={{
-                          ...td,
-                          background: booked ? "#ad5d56" : "#5c9e76",
-                          cursor: "pointer",
-                          height: "35px",
-                        }}
-                        title={booked ? "Booked" : "Available"}
-                      ></td>
-                    );
-                  })}
-                </tr>
+              {Object.entries(
+                rooms.reduce((acc, room) => {
+                  if (!acc[room.rcategory]) acc[room.rcategory] = [];
+                  acc[room.rcategory].push(room);
+                  return acc;
+                }, {})
+              ).map(([category, categoryRooms]) => (
+                <React.Fragment key={category}>
+                  {categoryRooms.map((room, idx) => (
+                    <tr key={room.rid}>
+                      {idx === 0 && (
+                        <td
+                          rowSpan={categoryRooms.length}
+                          style={{
+                            background: "#e3f2fd",
+                            fontWeight: "bold",
+                            textAlign: "center",
+                            verticalAlign: "middle",
+                            border: "1px solid #ccc",
+                          }}
+                        >
+                          {category}
+                        </td>
+                      )}
+
+                      <td style={td}>{room.rname}</td>
+
+                      {visibleDates.map((date, i) => {
+                        const booked = isBooked(room.rid, date);
+                        const baseColor = booked ? "#f28b82" : "#a8d5ba";
+                        const hoverColor = booked ? "#e57373" : "#8cc7a6";
+
+                        return (
+                          <td
+                            key={i}
+                            onClick={() => handleCellClick(room, date)}
+                            onMouseEnter={(e) => {
+                              e.target.dataset.originalColor = baseColor;
+                              e.target.style.backgroundColor = hoverColor;
+                            }}
+                            onMouseLeave={(e) => {
+                              e.target.style.backgroundColor =
+                                e.target.dataset.originalColor;
+                            }}
+                            style={{
+                              border: "1px solid #ccc",
+                              background: baseColor,
+                              cursor: "pointer",
+                              height: "35px",
+                              transition: "background-color 0.2s ease",
+                            }}
+                            title={booked ? "Booked" : "Available"}
+                          ></td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </React.Fragment>
               ))}
             </tbody>
           </table>
@@ -295,7 +360,7 @@ function Dashboard() {
           style={{
             marginTop: "15px",
             display: "flex",
-            flexWrap: "wrap", // ✅ wraps neatly on phones
+            flexWrap: "wrap",
             justifyContent: "center",
             gap: "20px",
             color: "#0d47a1",
@@ -303,10 +368,10 @@ function Dashboard() {
           }}
         >
           <span>
-            <span style={legendBox("#ad5d56")}></span> Booked
+            <span style={legendBox("#f28b82")}></span> Booked
           </span>
           <span>
-            <span style={legendBox("#5c9e76")}></span> Available
+            <span style={legendBox("#a8d5ba")}></span> Available
           </span>
         </div>
       </div>
@@ -319,19 +384,12 @@ const th = {
   border: "1px solid #ccc",
   fontWeight: "600",
 };
+
 const td = {
   border: "1px solid #ccc",
   padding: "6px",
 };
-const navBtn = {
-  background: "#64b5f6",
-  color: "white",
-  border: "none",
-  padding: "6px 12px",
-  borderRadius: "6px",
-  cursor: "pointer",
-  fontWeight: "600",
-};
+
 const legendBox = (color) => ({
   display: "inline-block",
   width: "16px",

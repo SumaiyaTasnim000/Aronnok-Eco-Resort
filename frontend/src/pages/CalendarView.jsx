@@ -1,3 +1,4 @@
+//E:\Aronnok Eco Resort\frontend\src\pages\CalendarView.jsx
 import React, { useEffect, useState } from "react";
 import axiosInstance from "../utils/axiosSetup";
 import { useNavigate } from "react-router-dom";
@@ -12,7 +13,6 @@ function CalendarView() {
   }, [token, navigate]);
 
   const [rooms, setRooms] = useState([]);
-  const [bookings, setBookings] = useState([]);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [visibleDates, setVisibleDates] = useState([]);
@@ -43,10 +43,7 @@ function CalendarView() {
         endDate,
       });
 
-      const bookingRes = await axiosInstance.get(`/bookings`);
-
       setRooms(roomRes.data || []);
-      setBookings(bookingRes.data || []);
       generateVisibleDates(startDate, endDate);
     } catch (err) {
       console.error("Error loading calendar data:", err);
@@ -71,16 +68,6 @@ function CalendarView() {
     }
   }, [startDate, endDate]);
 
-  // -------------------- Check if room is booked --------------------
-  const isBooked = (rid, date) => {
-    return bookings.some((b) => {
-      if (b.rid !== rid || b.isDeleted) return false;
-      const s = new Date(b.startDate);
-      const e = new Date(b.endDate);
-      return date >= s && date <= e;
-    });
-  };
-
   // -------------------- Week Navigation --------------------
   const shiftWeek = (direction) => {
     if (!startDate || !endDate) return;
@@ -98,27 +85,11 @@ function CalendarView() {
 
   // -------------------- Cell Click --------------------
   const handleCellClick = (room, date) => {
-    if (isBooked(room.rid, date)) {
-      const booking = bookings.find(
-        (b) =>
-          b.rid === room.rid &&
-          new Date(b.startDate) <= date &&
-          new Date(b.endDate) >= date
-      );
-
-      if (booking) {
-        // ⭐ Instead of alert → navigate to Bookings page
-        navigate("/bookings", {
-          state: { booking }, // pass booking object
-        });
-      }
-
-      return; // important so it does not continue to "else" part
-    }
-
-    // ⭐ If not booked → open Rooms page for new booking
     navigate("/rooms", {
-      state: { rid: room.rid, startDate: date.toISOString().slice(0, 10) },
+      state: {
+        rid: room.rid,
+        startDate: date.toISOString().slice(0, 10),
+      },
     });
   };
 
@@ -284,31 +255,19 @@ function CalendarView() {
                       </td>
 
                       {visibleDates.map((date, i) => {
-                        const booked = isBooked(room.rid, date);
                         return (
                           <td
                             key={i}
                             onClick={() => handleCellClick(room, date)}
-                            onMouseEnter={(e) => {
-                              // Store the original background so we can revert precisely
-                              e.target.dataset.originalColor =
-                                e.target.style.backgroundColor;
-                              e.target.style.backgroundColor = booked
-                                ? "#e57373"
-                                : "#8cc7a6"; // darker shade
-                            }}
-                            onMouseLeave={(e) => {
-                              e.target.style.backgroundColor =
-                                e.target.dataset.originalColor;
-                            }}
                             style={{
                               border: "1px solid #ccc",
-                              background: booked ? "#f28b82" : "#a8d5ba", // base soft colors
+                              background: room.available
+                                ? "#5c9e76"
+                                : "#ad5d56",
                               cursor: "pointer",
                               height: "35px",
-                              transition: "background-color 0.2s ease",
                             }}
-                            title={booked ? "Booked" : "Available"}
+                            title={room.available ? "Available" : "Booked"}
                           ></td>
                         );
                       })}
